@@ -1,0 +1,476 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ntels.avocado.dao.atom.monitor.MonitorMapper">
+	
+	<!-- 
+		* 알람 발생 시킬 권한 조회
+		 -->
+	<select id="authorizationAlarm" parameterType="com.ntels.avocado.domain.atom.monitor.Monitor" resultType="hashmap">
+		SELECT B.PKG_NAME AS PKG_NAME
+		     FROM (SELECT B.GROUP_NO 
+		                FROM (SELECT GROUP_NO 
+		                           FROM TAT_USER 
+		                          WHERE USER_ID = #{userId}
+		                     ) A
+		                   , TAT_USER_GROUP B 
+		               WHERE A.GROUP_NO = B.GROUP_NO
+		          )A
+		        , TAT_USER_GROUP_PKG B
+            WHERE A.GROUP_NO = B.GROUP_NO
+	</select>
+	
+	<!-- 
+		* 알람 All 리스트
+		 -->
+	<select id="alarmAll" resultType="hashmap">
+		SELECT A.PKG_NAME
+		     , A.CODE
+		     , B.NAME 
+		     FROM (SELECT A.PKG_NAME
+		                , A.CODE
+		                , B.CONTROL_ID 
+		                FROM (SELECT PKG_NAME
+		                           , CODE 
+		                           FROM TAT_ALM_CODE_DEF 
+		                          WHERE ALARM_YN = 'Y'
+		                      ) A 
+		                    , (SELECT PKG_NAME
+		                            , CODE
+		                            , CONTROL_ID 
+		                            FROM TAT_ALM_CONTROL_CODE 
+		                      ) B 
+		               WHERE A.PKG_NAME = B.PKG_NAME 
+		                 AND A.CODE = B.CODE
+		           ) A 
+		         , (SELECT CONTROL_ID
+		                 , NAME 
+		                 FROM TAT_ALM_CONTROL_DEF 
+		                WHERE USE_YN = 'Y'
+		                  AND NAME = 'POPUP'
+		           ) B 
+		     WHERE A.CONTROL_ID = B.CONTROL_ID 
+	</select>
+		 
+	<!-- 
+		* 알람 리스트 총카운터
+		 -->
+	<select id="AlarmTotalCount" parameterType="com.ntels.avocado.domain.atom.monitor.Monitor" resultType="int">
+		SELECT COUNT(*) FROM (
+			SELECT A.*
+			     FROM (SELECT A.* 
+			                , (SELECT CODE_NAME FROM TAT_COMMON_CODE WHERE GROUP_CD = '030101' AND DETAIL_CD = A.SEVERITY_CCD) AS SEVERITY_NAME
+			                <!-- , (SELECT NODE_NAME FROM TAT_NODE WHERE NODE_NO = A.NODE_NO) AS NODE_NAME -->
+			                FROM TAT_ALM_STATUS A
+			               WHERE PKG_NAME IN 
+			                 <foreach collection="monitor.packageName" item="item" index="index" separator="," open="(" close=")">
+                                #{item}
+                             </foreach>	               
+				      ) A
+				      LEFT OUTER JOIN
+				      TAT_ALM_CODE_DEF B
+			       ON A.PKG_NAME = B.PKG_NAME 
+			      AND A.CODE = B.CODE 
+		) TBL
+		WHERE 1=1
+		<if test="monitor.search != '' and monitor.search != null">
+		  <if test="monitor.search_type == 1">AND PKG_NAME LIKE CONCAT(#{monitor.search}, '%')</if>
+		  <if test="monitor.search_type == 2">AND NODE_NAME LIKE CONCAT(#{monitor.search}, '%')</if>
+          <if test="monitor.search_type == 3">AND CODE LIKE CONCAT(#{monitor.search}, '%')</if>
+          <if test="monitor.search_type == 4">AND SEVERITY_NAME LIKE CONCAT(#{monitor.search}, '%')</if>
+        </if>       
+        <if test="monitor.nodeId != '' and monitor.nodeId != null">
+        	AND NODE_NO = #{monitor.nodeId}
+        </if>
+	</select>
+	
+    <!-- 
+    	* 알람 리스트
+    	 -->
+	<select id="listAlarm" parameterType="com.ntels.avocado.domain.atom.monitor.Monitor" resultType="hashmap">
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_header"/>
+		SELECT * FROM (
+			SELECT A.MSG_ID
+			     , A.CONFIRM_YN
+			     , DATE_FORMAT(A.PRC_DATE,'%Y%m%d%H%i%s') AS PRC_DATE
+			     , DATE_FORMAT(A.LST_DATE,'%Y%m%d%H%i%s') AS LST_DATE
+			     , A.LST_DATE AS LST_DATE_ORDER
+			     , A.PKG_NAME
+			     , A.NODE_NO
+			     , A.NODE_NAME
+			     , A.PROC_NO
+			     , (SELECT PROC_NAME FROM TAT_PROCESS WHERE PROC_NO = A.PROC_NO) AS PROC_NAME
+			     , A.SEVERITY_CCD
+			     , (SELECT CODE_NAME FROM TAT_COMMON_CODE WHERE GROUP_CD = '030101' AND DETAIL_CD = A.SEVERITY_CCD) AS SEVERITY_NAME
+			     , A.ALIAS_CODE AS CODE
+			     , A.PROBABLE_CAUSE
+			     , A.ADDITIONAL_TEXT
+			     , A.LOCATION
+			     , A.TARGET
+			     , A.COMPLEMENT
+			     , A.VALUE
+			     , B.TYPE_CCD
+	             , (SELECT CODE_NAME FROM TAT_COMMON_CODE WHERE GROUP_CD = '030100' AND DETAIL_CD = B.TYPE_CCD) AS TYPE_NAME			     
+			     FROM (SELECT * 
+			                FROM TAT_ALM_STATUS 
+			               WHERE PKG_NAME IN 
+			                <foreach collection="monitor.packageName" item="item" index="index" separator="," open="(" close=")">
+                                #{item}
+                             </foreach>		               
+				      ) A
+				      LEFT OUTER JOIN
+				      TAT_ALM_CODE_DEF B
+			       ON A.PKG_NAME = B.PKG_NAME 
+			      AND A.CODE = B.CODE 
+		) TBL  
+		WHERE 1=1
+		<if test="monitor.search != '' and monitor.search != null">
+		  <if test="monitor.search_type == 1">AND PKG_NAME LIKE CONCAT(#{monitor.search}, '%')</if>
+		  <if test="monitor.search_type == 2">AND NODE_NAME LIKE CONCAT(#{monitor.search}, '%')</if>
+          <if test="monitor.search_type == 3">AND CODE LIKE CONCAT(#{monitor.search}, '%')</if>
+          <if test="monitor.search_type == 4">AND SEVERITY_NAME LIKE CONCAT(#{monitor.search}, '%')</if>
+        </if>      
+        <if test="monitor.nodeId != '' and monitor.nodeId != null">
+        	AND NODE_NO = #{monitor.nodeId}
+        </if>
+       ORDER BY LST_DATE_ORDER DESC
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_footer"/>
+	</select>
+	
+	
+	<select id="alarmDetail" parameterType="string" resultType="hashmap">
+		SELECT A.CONFIRM_YN
+			     , DATE_FORMAT(A.PRC_DATE,'%Y%m%d%H%i%s') AS PRC_DATE
+			     , DATE_FORMAT(A.LST_DATE,'%Y%m%d%H%i%s') AS LST_DATE
+			     , A.PKG_NAME
+			     , A.NODE_NO
+			     , A.NODE_NAME
+			     , A.PROC_NO
+			     , (SELECT PROC_NAME FROM TAT_PROCESS WHERE PROC_NO = A.PROC_NO) AS PROC_NAME
+			     , A.SEVERITY_CCD
+			     , (SELECT CODE_NAME FROM TAT_COMMON_CODE WHERE GROUP_CD = '030101' AND DETAIL_CD = A.SEVERITY_CCD) AS SEVERITY_NAME
+			     , A.ALIAS_CODE AS CODE
+			     , A.PROBABLE_CAUSE
+			     , A.ADDITIONAL_TEXT
+			     , A.LOCATION
+			     , A.TARGET
+			     , A.COMPLEMENT
+			     , A.VALUE
+			     , DATE_FORMAT(A.CONFIRM_SET_DATE,'%Y%m%d%H%i%s') AS CONFIRM_SET_DATE
+                 , DATE_FORMAT(A.CONFIRM_REL_DATE,'%Y%m%d%H%i%s') AS CONFIRM_REL_DATE
+			     , B.TYPE_CCD
+	             , (SELECT CODE_NAME FROM TAT_COMMON_CODE WHERE GROUP_CD = '030100' AND DETAIL_CD = B.TYPE_CCD) AS TYPE_NAME			     
+			     FROM (SELECT * 
+			                FROM TAT_ALM_STATUS 
+			               WHERE MSG_ID = #{msgId} 		               
+				      ) A
+				      LEFT OUTER JOIN
+				      TAT_ALM_CODE_DEF B
+			       ON A.PKG_NAME = B.PKG_NAME 
+			      AND A.CODE = B.CODE
+	</select>
+	
+	<!-- 
+    	* 엑셀 다운로드
+    	 -->
+	<select id="listExcel" parameterType="com.ntels.avocado.domain.atom.monitor.Monitor" resultType="java.util.LinkedHashMap">
+		SELECT NODE_NAME AS 'Node Name'
+		     , LST_DATE AS 'Process Date' 
+		     , CODE AS 'Alarm Code' 
+		     , TYPE_NAME AS 'Alarm Group' 
+		     , SEVERITY_NAME AS 'Severity' 
+		     , PROBABLE_CAUSE AS 'Probable Cause' 
+		     , TARGET AS 'Target' 
+		     , CONCAT(VALUE, ' ', COMPLEMENT) AS 'Value' 
+		   FROM (
+			SELECT A.MSG_ID
+			     , A.CONFIRM_YN
+			     , DATE_FORMAT(A.PRC_DATE,(SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE =#{monitor.language})) AS PRC_DATE
+			     , DATE_FORMAT(A.LST_DATE,(SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE =#{monitor.language})) AS LST_DATE
+			     , A.LST_DATE AS LST_DATE_ORDER
+			     , A.PKG_NAME
+			     , A.NODE_NO
+			     , A.NODE_NAME
+			     , A.PROC_NO
+			     , (SELECT PROC_NAME FROM TAT_PROCESS WHERE PROC_NO = A.PROC_NO) AS PROC_NAME
+			     , A.SEVERITY_CCD
+			     , (SELECT CODE_NAME FROM TAT_COMMON_CODE WHERE GROUP_CD = '030101' AND DETAIL_CD = A.SEVERITY_CCD) AS SEVERITY_NAME
+			     , A.ALIAS_CODE AS CODE
+			     , A.PROBABLE_CAUSE
+			     , A.ADDITIONAL_TEXT
+			     , A.LOCATION
+			     , A.TARGET
+			     , A.COMPLEMENT
+			     , A.VALUE
+			     , B.TYPE_CCD
+	             , (SELECT CODE_NAME FROM TAT_COMMON_CODE WHERE GROUP_CD = '030100' AND DETAIL_CD = B.TYPE_CCD) AS TYPE_NAME			     
+			     FROM (SELECT * 
+			                FROM TAT_ALM_STATUS 
+			               WHERE PKG_NAME IN 
+			                <foreach collection="monitor.packageName" item="item" index="index" separator="," open="(" close=")">
+                                #{item}
+                             </foreach>		               
+				      ) A
+				      LEFT OUTER JOIN
+				      TAT_ALM_CODE_DEF B
+			       ON A.PKG_NAME = B.PKG_NAME 
+			      AND A.CODE = B.CODE 
+		) TBL  
+		WHERE 1=1
+		<if test="monitor.search != '' and monitor.search != null">
+		  <if test="monitor.search_type == 1">AND PKG_NAME LIKE CONCAT(#{monitor.search}, '%')</if>
+		  <if test="monitor.search_type == 2">AND NODE_NAME LIKE CONCAT(#{monitor.search}, '%')</if>
+          <if test="monitor.search_type == 3">AND CODE LIKE CONCAT(#{monitor.search}, '%')</if>
+          <if test="monitor.search_type == 4">AND SEVERITY_NAME LIKE CONCAT(#{monitor.search}, '%')</if>
+        </if>      
+        <if test="monitor.nodeId != '' and monitor.nodeId != null">
+        	AND NODE_NO = #{monitor.nodeId}
+        </if>
+       ORDER BY LST_DATE_ORDER DESC
+	</select>
+	
+	<!-- 최종 알람 조회 -->
+	<select id="lastSound" resultType="hashmap">
+		SELECT A.NODE_NO
+		                , A.CODE
+		                , A.PKG_NAME
+		                , A.SEVERITY_CCD
+                    , (SELECT LOWER(CODE_NAME) AS NAME FROM TAT_COMMON_CODE WHERE GROUP_CD = '030101' AND DETAIL_CD = A.SEVERITY_CCD) AS SEVERITY_NAME
+		                , A.LST_DATE
+		                , B.CONTROL_ID 
+                    , B.NAME
+		                FROM (SELECT A.NODE_NO
+		                           , A.CODE
+		                           , A.PKG_NAME
+		                           , A.SEVERITY_CCD
+		                           , A.LST_DATE 
+                               , B.CONTROL_ID 
+		                           FROM (SELECT NODE_NO
+		                                      , CODE
+		                                      , PKG_NAME
+		                                      , SEVERITY_CCD
+		                                      , LST_DATE 
+		                                      FROM TAT_ALM_STATUS 
+		                                     WHERE CONFIRM_YN = 'N'
+		                                ) A
+                                   , TAT_ALM_CONTROL_CODE B 
+		                               WHERE A.PKG_NAME = B.PKG_NAME
+                                    AND A.CODE = B.CODE
+                            )A 
+                          , TAT_ALM_CONTROL_DEF B 
+                     WHERE A.CONTROL_ID = B.CONTROL_ID 
+                       AND B.NAME = 'VOICE'
+              ORDER BY A.SEVERITY_CCD, A.LST_DATE DESC LIMIT 1
+	</select>
+	
+	<!-- 
+		* Severity Total Count 조회 
+		-->
+	<select id="severityCount" resultType="hashmap">
+		SELECT A.DETAIL_CD AS SEVERITY
+		     , LOWER(A.CODE_NAME) AS SEVERITY_NAME
+		     , IFNULL(B.CNT, 0) AS CNT
+		FROM (SELECT DETAIL_CD
+		           , CODE_NAME 
+		           FROM TAT_COMMON_CODE 
+		          WHERE GROUP_CD = '030101'
+		     ) A
+		     LEFT OUTER JOIN (SELECT SEVERITY_CCD
+		                           , COUNT(*) AS CNT 
+		                           FROM (SELECT A.*
+                                             , (SELECT CODE_NAME FROM TAT_COMMON_CODE WHERE GROUP_CD = '030101' AND DETAIL_CD = A.SEVERITY_CCD) AS SEVERITY_NAME
+                                             <!-- , (SELECT NODE_NAME FROM TAT_NODE WHERE NODE_NO = A.NODE_NO) AS NODE_NAME    -->
+                                             FROM (SELECT * 
+                                                        FROM TAT_ALM_STATUS 
+			                                           WHERE PKG_NAME IN 
+			                                             <foreach collection="monitor.packageName" item="item" index="index" separator="," open="(" close=")">
+                                                            #{item}
+                                                         </foreach>
+			                             ) A
+			                  ) A
+		                     WHERE 1 = 1
+		                       <if test="monitor.search != '' and monitor.search != null">
+								 <if test="monitor.search_type == 1">AND PKG_NAME LIKE CONCAT(#{monitor.search}, '%')</if>
+								 <if test="monitor.search_type == 2">AND NODE_NAME LIKE CONCAT(#{monitor.search}, '%')</if>
+						         <if test="monitor.search_type == 3">AND CODE LIKE CONCAT(#{monitor.search}, '%')</if>
+						         <if test="monitor.search_type == 4">AND SEVERITY_NAME LIKE CONCAT(#{monitor.search}, '%')</if>
+						       </if>
+						       <if test="monitor.nodeId != '' and monitor.nodeId != null">
+						        AND NODE_NO = #{monitor.nodeId}
+						       </if>
+		              GROUP BY SEVERITY_CCD
+		             		 ) B 
+		    ON A.DETAIL_CD = B.SEVERITY_CCD
+	</select>
+	
+	<!-- 
+		* Audio 태그에 등록하기 위한 Severity Sound 조회 
+		-->
+	<select id="audioSeveritySound" resultType="hashmap">
+		SELECT LOWER(CODE_NAME) AS NAME 
+		     FROM TAT_COMMON_CODE 
+		    WHERE GROUP_CD = '030101'
+	</select>
+	
+	<!-- ack 업데이트 -->
+	<update id="checkAlarmAck">
+		UPDATE TAT_ALM_STATUS
+		SET    CONFIRM_YN = 'Y'
+		     , CONFIRM_SET_DATE = NOW()	
+		     , OPER_NO = #{operNo}
+		WHERE MSG_ID = #{msgId}
+    </update>
+    
+    <!-- unack 업데이트 -->
+    <update id="checkAlarmUnack">
+		UPDATE TAT_ALM_STATUS
+		SET    CONFIRM_YN = 'N'
+		     , CONFIRM_REL_DATE = NOW()	
+		     , OPER_NO = #{operNo}
+		WHERE MSG_ID = #{msgId}
+    </update>
+    
+    <select id="getCode" resultType="string">
+		SELECT CODE AS CODE FROM TAT_ALM_STATUS WHERE MSG_ID = #{msgId}
+	</select>
+    
+    <select id="listNodeStatus" resultType="hashmap">
+		SELECT PKG_NAME
+		     , NODE_NO
+		     , IF(NODE_STATUS_CCD IS NULL, 'UNKNOWN', NODE_STATUS_CCD) AS NODE_STATUS
+		     , PROC_STATUS_CCD AS PROC_STATUS
+		     FROM TAT_NODE 
+		    WHERE USE_YN = 'Y'
+    </select>
+    
+    
+    <!-- 
+    	** 트리 서비스 조회
+    	--> 
+	<select id="listTreeService" resultType="hashmap">
+		SELECT SVC_NO AS id
+		     , SVC_NAME AS text
+		     , '/images/tree_icon/images/srv_unknown.png' AS icon
+		     FROM (SELECT B.NODE_TYPE
+		                , B.PKG_NAME 
+		                FROM (SELECT NODE_TYPE
+		                           , PKG_NAME 
+		                           FROM TAT_NODE 
+		                          WHERE NODE_NO = #{nodeId}
+		                            AND USE_YN = 'Y'
+		                      )A 
+		                    , TAT_NODE_TYPE B 
+		               WHERE A.NODE_TYPE = B.NODE_TYPE 
+		                 AND A.PKG_NAME = B.PKG_NAME
+                  ) A
+                , TAT_SVC B 
+            WHERE A.NODE_TYPE = B.NODE_TYPE 
+              AND A.PKG_NAME = B.PKG_NAME
+	</select>
+	
+	<!-- 
+    	** 트리 프로세스 조회
+    	-->
+	<select id="listTreeProcess" parameterType="string" resultType="hashmap">
+		SELECT CONCAT(SVC_NO,'-',PROC_NO) AS id
+             , PROC_NAME AS text  
+             , '/images/tree_icon/images/process_unknown.png' AS icon
+             FROM TAT_PROCESS 
+            WHERE USE_YN='Y' 
+              AND SVC_NO = #{serviceId}
+	</select>
+	
+	<!-- 
+    	** 트리에 해당하는 전체프로세스를 조회한다.(프로세스 상태값을 패킷으로 전달하기위한값
+    	-->
+	<select id="listTreeAllProcess" parameterType="string" resultType="hashmap">
+		SELECT PROC_NO
+		     , PROC_NAME 
+		     FROM (SELECT SVC_NO
+		                , SVC_NAME 
+		                FROM (SELECT B.NODE_TYPE
+		                           , B.PKG_NAME 
+		                           FROM (SELECT NODE_TYPE
+		                                      , PKG_NAME 
+		                                      FROM TAT_NODE 
+		                                     WHERE NODE_NO = #{nodeId}
+		                                       AND USE_YN = 'Y'
+		                                 )A
+		                               , TAT_NODE_TYPE B 
+		                          WHERE A.NODE_TYPE = B.NODE_TYPE 
+		                            AND A.PKG_NAME = B.PKG_NAME
+                            )A
+                           , TAT_SVC B 
+                      WHERE A.NODE_TYPE = B.NODE_TYPE 
+                        AND A.PKG_NAME = B.PKG_NAME
+                 ) A
+               , (SELECT * FROM TAT_PROCESS WHERE USE_YN='Y') B
+           WHERE A.SVC_NO = B.SVC_NO
+	</select>
+	
+	
+	<select id="getProcessAlarm" resultType="integer">
+		SELECT PROC_NO FROM TAT_PROCESS WHERE PROC_NAME = 'ALM' AND NODE_TYPE = 'EMS'
+	</select>
+	
+	<select id="getProcNo" resultType="integer">
+		SELECT PROC_NO 
+		  FROM TAT_PROCESS 
+		 WHERE PROC_NAME 		= #{procName}
+		   AND NODE_TYPE 		= #{nodeType}
+	</select>
+	
+	<select id="listTopResourceGroup" resultType="hashmap">
+		SELECT RSC_GRP_ID
+		     , (SELECT RSC_GRP_NAME FROM TAT_RSC_GRP_DEF WHERE RSC_GRP_ID = TBL.RSC_GRP_ID) AS RSC_GRP_NAME
+		      FROM (SELECT A.NODE_NO
+		               , B.RSC_GRP_ID
+		               , B.RSC_ID
+		               , B.PRC_DATE
+		               , B.DATA 
+		               FROM (SELECT B.NODE_NO 
+		                          FROM (SELECT * 
+		                                     FROM TAT_PKG 
+		                                    WHERE EMS_YN = 'Y'
+		                               ) A
+		                               , TAT_NODE B 
+		                         WHERE A.PKG_NAME = B.PKG_NAME
+                                   AND B.INTERNAL_YN = 'Y' 
+                                   AND NODE_TYPE = 'EMS'
+                            ) A
+                            , TAT_RSC_TOP B 
+                      WHERE A.NODE_NO = B.NODE_NO
+                     ORDER BY B.PRC_DATE DESC
+                 ) TBL
+          GROUP BY RSC_GRP_ID
+	</select>
+	
+	<select id="listTopResource" resultType="hashmap">
+		SELECT RSC_ID
+		    , (SELECT RSC_NAME FROM (SELECT RSC_ID, RSC_NAME FROM TAT_RSC_DEF GROUP BY RSC_ID, RSC_NAME) RSC_DEF WHERE RSC_ID = TBL.RSC_ID) AS RSC_ID_NAME
+		    , DATE_FORMAT(PRC_DATE,'%Y%m%d%H%i%s') AS PRC_DATE
+        , DATA 
+		    FROM (SELECT B.RSC_ID
+		               , B.PRC_DATE
+		               , B.DATA 
+		               FROM (SELECT B.NODE_NO 
+		                          FROM (SELECT * 
+		                                     FROM TAT_PKG 
+		                                    WHERE EMS_YN = 'Y'
+		                               ) A
+		                               , TAT_NODE B 
+		                         WHERE A.PKG_NAME = B.PKG_NAME
+                                   AND B.INTERNAL_YN = 'Y' 
+                                   AND NODE_TYPE = 'EMS'
+                            ) A
+                            , TAT_RSC_TOP B 
+                      WHERE A.NODE_NO = B.NODE_NO
+                        AND B.RSC_GRP_ID = #{rsc_grp_id}
+                     ORDER BY B.PRC_DATE DESC
+                 ) TBL
+          GROUP BY RSC_ID
+	</select>
+	
+	
+</mapper>

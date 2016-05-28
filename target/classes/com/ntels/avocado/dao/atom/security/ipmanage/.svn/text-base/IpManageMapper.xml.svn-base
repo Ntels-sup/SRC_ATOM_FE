@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ntels.avocado.dao.atom.security.ipmanage.IpManageMapper">
+	
+	<select id="listAllowYn" resultType="java.util.Map">
+		SELECT DETAIL_CD   AS ID
+		     , CODE_NAME   AS NAME
+		  FROM TAT_COMMON_CODE
+		 WHERE 1=1
+		   AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_GROUP_CODE_ALLOWYN"/>
+		 ORDER BY DISPLAY_ORDER
+	</select>
+	
+	<select id="duplChkIpBandWidth" resultType="com.ntels.avocado.domain.atom.security.ipmanage.IpManageDomain">
+		SELECT IP
+		     , MAX_SIMULT
+		     , DESCRIPTION
+		  FROM TAT_IP_MANAGER
+		 WHERE 1=1
+	</select>
+	
+	<select id="count" resultType="int">
+		SELECT COUNT(*)
+		  FROM TAT_IP_MANAGER
+		 WHERE 1=1
+		   <if test="condition.searchAllowYn != 'all' and condition.searchAllowYn != '' and condition.searchAllowYn != null">
+		   AND ALLOW_YN = #{condition.searchAllowYn}
+		   </if>
+		   <if test="condition.searchIp != '' and condition.searchIp != null">
+		   AND IP LIKE CONCAT('%', #{condition.searchIp , jdbcType=CHAR}, '%')
+		   </if>
+	</select>
+	
+	<select id="list" resultType="com.ntels.avocado.domain.atom.security.ipmanage.IpManageDomain">
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_header" />
+			SELECT IP_MANAGER_NO
+			     , IP
+			     , ALLOW_YN
+			     , CASE ALLOW_YN
+			       	WHEN 'Y' THEN 'Allow'
+			       	WHEN 'N' THEN 'Deny'
+			       END AS ALLOW_NAME 
+			     , MAX_SIMULT
+			     , DESCRIPTION
+			  FROM TAT_IP_MANAGER
+			 WHERE 1=1
+			   <if test="condition.searchAllowYn != 'all' and condition.searchAllowYn != '' and condition.searchAllowYn != null">
+			   AND ALLOW_YN = #{condition.searchAllowYn} 
+			   </if>
+			   <if test="condition.searchIp != '' and condition.searchIp != null">
+			   AND IP LIKE CONCAT('%', #{condition.searchIp , jdbcType=CHAR}, '%')
+			   </if>
+			 ORDER BY IP_MANAGER_NO DESC
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_footer" />
+	</select>
+	
+	<select id="detail" resultType="com.ntels.avocado.domain.atom.security.ipmanage.IpManageDomain">
+		SELECT IP_MANAGER_NO
+		     , IP
+		     , ALLOW_YN
+		     , CASE ALLOW_YN
+		       	WHEN 'Y' THEN 'Allow'
+		       	WHEN 'N' THEN 'Deny'
+		       END AS ALLOW_NAME
+		     , MAX_SIMULT
+		     , DESCRIPTION
+		  FROM TAT_IP_MANAGER
+		 WHERE 1=1
+		   AND IP_MANAGER_NO = #{condition.ip_manager_no}
+	</select>
+	
+	<insert id="addAction" parameterType="com.ntels.avocado.domain.atom.security.ipmanage.IpManageDomain">
+		INSERT INTO TAT_IP_MANAGER
+			(IP_MANAGER_NO ,IP, ALLOW_YN, MAX_SIMULT, DESCRIPTION)
+		VALUES 
+			( #{condition.ip_manager_no} ,#{condition.ip}, #{condition.allow_yn},#{condition.max_simult},#{condition.description})
+	</insert>
+	
+	<update id="modifyAction" parameterType="com.ntels.avocado.domain.atom.security.ipmanage.IpManageDomain">
+		UPDATE TAT_IP_MANAGER
+		   SET IP = #{condition.ip}
+		     , ALLOW_YN = #{condition.allow_yn}
+		     , MAX_SIMULT = #{condition.max_simult}
+		     , DESCRIPTION = #{condition.description}
+		 WHERE 1=1
+		   AND IP_MANAGER_NO = #{condition.ip_manager_no} 
+	</update>
+	
+	<delete id="removeAction" parameterType="com.ntels.avocado.domain.atom.security.ipmanage.IpManageDomain">
+		DELETE FROM TAT_IP_MANAGER
+		 WHERE 1=1
+		   AND IP_MANAGER_NO = #{condition.ip_manager_no}
+	</delete>
+	
+	<select id="listExcel" resultType="java.util.LinkedHashMap">
+		SELECT  IP_MANAGER_NO AS 'No'
+		     ,  IP AS 'IP Address' 
+		     , CASE ALLOW_YN
+		       	WHEN 'Y' THEN 'Allow'
+		       	WHEN 'N' THEN 'Deny'
+		       END AS 'Login Allowance' 
+		     , MAX_SIMULT AS 'Sessions'
+		     , DESCRIPTION AS 'Description'
+		  FROM TAT_IP_MANAGER
+		 WHERE 1=1
+		   <if test="condition.searchAllowYn != 'all' and condition.searchAllowYn != '' and condition.searchAllowYn != null">
+		   AND ALLOW_YN = #{condition.searchAllowYn} 
+		   </if>
+		   <if test="condition.searchIp != '' and condition.searchIp != null">
+		   AND IP LIKE CONCAT('%', #{condition.searchIp , jdbcType=CHAR}, '%')
+		   </if>
+		    ORDER BY IP_MANAGER_NO DESC
+	</select>
+	
+	<select id="getMaxIpNo" resultType="String">
+       SELECT MAX(IP_MANAGER_NO)+1 
+       FROM TAT_IP_MANAGER
+	</select>
+	
+</mapper>

@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ntels.avocado.dao.atom.general.systeminfor.SystemInforMapper">
+ 	<select id="count" resultType="int" >
+		SELECT COUNT(*) FROM  (
+		    SELECT A.PKG_NAME
+				   , A.NODE_NAME
+				   , (SELECT CONCAT(DATE_FORMAT(B.PRC_DATE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language})),' ',DATE_FORMAT(B.PRC_DATE, '%H:%i:%s')) AS PRC_DATE from TAT_NODE_INFO B 
+	        		WHERE B.NODE_NO= A.NODE_NO AND B.DETAIL_CODE_CCD = '5') AS PRC_DATE
+  		  
+		         , (SELECT B.INFO 
+				          FROM TAT_COMMON_CODE C , TAT_NODE_INFO B 
+				         WHERE B.NODE_NO= A.NODE_NO
+		               AND C.DETAIL_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE_CPU"/>
+		               AND C.DETAIL_CD = B.DETAIL_CODE_CCD
+				           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE"/>) AS CPU_NAME 
+		  
+		         , (SELECT B.INFO 
+				          FROM TAT_COMMON_CODE C , TAT_NODE_INFO B 
+				         WHERE B.NODE_NO= A.NODE_NO
+		               AND C.DETAIL_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE_KERNEL"/>
+		               AND C.DETAIL_CD = B.DETAIL_CODE_CCD
+				           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE"/>) AS KERNEL 
+		               
+		          , (SELECT B.INFO 
+				          FROM TAT_COMMON_CODE C , TAT_NODE_INFO B 
+				         WHERE B.NODE_NO= A.NODE_NO
+		               AND C.DETAIL_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE_MEMORY"/>
+		               AND C.DETAIL_CD = B.DETAIL_CODE_CCD
+				           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE"/>) AS MEMORY 
+		               
+		         , (SELECT B.INFO 
+				          FROM TAT_COMMON_CODE C , TAT_NODE_INFO B 
+				         WHERE B.NODE_NO= A.NODE_NO
+		               AND C.DETAIL_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE_MYSQL"/>
+		               AND C.DETAIL_CD = B.DETAIL_CODE_CCD
+				           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE"/>) AS DB_NAME 
+		               
+		         , (SELECT B.INFO 
+				          FROM TAT_COMMON_CODE C , TAT_NODE_INFO B 
+				         WHERE B.NODE_NO= A.NODE_NO
+		               AND C.DETAIL_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE_OS"/>
+		               AND C.DETAIL_CD = B.DETAIL_CODE_CCD
+				           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE"/>) AS OS 
+		  
+		         , (SELECT B.INFO 
+				          FROM TAT_COMMON_CODE C , TAT_NODE_INFO B 
+				         WHERE B.NODE_NO= A.NODE_NO
+		               AND C.DETAIL_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE_PYTHON"/>
+		               AND C.DETAIL_CD = B.DETAIL_CODE_CCD
+				           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE"/>) AS PYTHON 
+				  FROM TAT_NODE A
+				  WHERE A.NODE_NO IN (${condition.node_id})
+		) S WHERE S.PRC_DATE IS NOT NULL
+	</select>
+	
+	<select id="list" resultType="com.ntels.avocado.domain.atom.general.systeminfor.SystemInforDomain" databaseId="mysql" >
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_header" />	  
+			SELECT * FROM  (
+			    SELECT 
+				    	   A.PKG_NAME
+					     , A.NODE_NAME
+	 					 , (SELECT CONCAT(DATE_FORMAT(B.PRC_DATE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language})),' ',DATE_FORMAT(B.PRC_DATE, '%H:%i:%s')) AS PRC_DATE from TAT_NODE_INFO B 
+			        		WHERE B.NODE_NO= A.NODE_NO AND B.DETAIL_CODE_CCD = '5') AS PRC_DATE
+				   
+				         , (SELECT B.INFO 
+						          FROM TAT_COMMON_CODE C , TAT_NODE_INFO B 
+						         WHERE B.NODE_NO= A.NODE_NO
+				               AND C.DETAIL_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE_CPU"/>
+				               AND C.DETAIL_CD = B.DETAIL_CODE_CCD
+						           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE"/>) AS CPU_NAME 
+				  
+				         , (SELECT B.INFO 
+						          FROM TAT_COMMON_CODE C , TAT_NODE_INFO B 
+						         WHERE B.NODE_NO= A.NODE_NO
+				               AND C.DETAIL_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE_KERNEL"/>
+				               AND C.DETAIL_CD = B.DETAIL_CODE_CCD
+						           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE"/>) AS KERNEL 
+				               
+				          , (SELECT B.INFO 
+						          FROM TAT_COMMON_CODE C , TAT_NODE_INFO B 
+						         WHERE B.NODE_NO= A.NODE_NO
+				               AND C.DETAIL_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE_MEMORY"/>
+				               AND C.DETAIL_CD = B.DETAIL_CODE_CCD
+						           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE"/>) AS MEMORY 
+				               
+				         , (SELECT B.INFO 
+						          FROM TAT_COMMON_CODE C , TAT_NODE_INFO B 
+						         WHERE B.NODE_NO= A.NODE_NO
+				               AND C.DETAIL_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE_MYSQL"/>
+				               AND C.DETAIL_CD = B.DETAIL_CODE_CCD
+						           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE"/>) AS DB_NAME 
+				               
+				         , (SELECT B.INFO 
+						          FROM TAT_COMMON_CODE C , TAT_NODE_INFO B 
+						         WHERE B.NODE_NO= A.NODE_NO
+				               AND C.DETAIL_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE_OS"/>
+				               AND C.DETAIL_CD = B.DETAIL_CODE_CCD
+						           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE"/>) AS OS 
+				  
+				         , (SELECT B.INFO 
+						          FROM TAT_COMMON_CODE C , TAT_NODE_INFO B 
+						         WHERE B.NODE_NO= A.NODE_NO
+				               AND C.DETAIL_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE_PYTHON"/>
+				               AND C.DETAIL_CD = B.DETAIL_CODE_CCD
+						           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE"/>) AS PYTHON 
+			  FROM TAT_NODE A
+			  WHERE A.NODE_NO IN (${condition.node_id})
+		) S WHERE S.PRC_DATE IS NOT NULL
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_footer" />
+	</select>	
+	
+	 <select id="listExcel" resultType="java.util.LinkedHashMap" databaseId="mysql">
+			SELECT  PKG_NAME AS "Package"	
+				 ,  NODE_NAME AS "Node"
+				 ,  PRC_DATE AS "Date"
+				 ,  DB_NAME AS "DB"
+				 ,  OS AS "OS"
+				 ,  CPU_NAME AS "CPU"
+				 ,  KERNEL  AS "Kernel"
+				 ,  MEMORY AS "Total Memory"
+				 ,  PYTHON AS "Python"
+			FROM  
+			(
+			    SELECT 
+				    	   A.PKG_NAME
+					     , A.NODE_NAME
+	 					 , (SELECT CONCAT(DATE_FORMAT(B.PRC_DATE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language})),' ',DATE_FORMAT(B.PRC_DATE, '%H:%i:%s')) AS PRC_DATE from TAT_NODE_INFO B 
+			        		WHERE B.NODE_NO= A.NODE_NO AND B.DETAIL_CODE_CCD = '5') AS PRC_DATE
+				   
+				         , (SELECT B.INFO 
+						          FROM TAT_COMMON_CODE C , TAT_NODE_INFO B 
+						         WHERE B.NODE_NO= A.NODE_NO
+				               AND C.DETAIL_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE_CPU"/>
+				               AND C.DETAIL_CD = B.DETAIL_CODE_CCD
+						           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE"/>) AS CPU_NAME 
+				  
+				         , (SELECT B.INFO 
+						          FROM TAT_COMMON_CODE C , TAT_NODE_INFO B 
+						         WHERE B.NODE_NO= A.NODE_NO
+				               AND C.DETAIL_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE_KERNEL"/>
+				               AND C.DETAIL_CD = B.DETAIL_CODE_CCD
+						           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE"/>) AS KERNEL 
+				               
+				          , (SELECT B.INFO 
+						          FROM TAT_COMMON_CODE C , TAT_NODE_INFO B 
+						         WHERE B.NODE_NO= A.NODE_NO
+				               AND C.DETAIL_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE_MEMORY"/>
+				               AND C.DETAIL_CD = B.DETAIL_CODE_CCD
+						           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE"/>) AS MEMORY 
+				               
+				         , (SELECT B.INFO 
+						          FROM TAT_COMMON_CODE C , TAT_NODE_INFO B 
+						         WHERE B.NODE_NO= A.NODE_NO
+				               AND C.DETAIL_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE_MYSQL"/>
+				               AND C.DETAIL_CD = B.DETAIL_CODE_CCD
+						           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE"/>) AS DB_NAME 
+				               
+				         , (SELECT B.INFO 
+						          FROM TAT_COMMON_CODE C , TAT_NODE_INFO B 
+						         WHERE B.NODE_NO= A.NODE_NO
+				               AND C.DETAIL_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE_OS"/>
+				               AND C.DETAIL_CD = B.DETAIL_CODE_CCD
+						           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE"/>) AS OS 
+				  
+				         , (SELECT B.INFO 
+						          FROM TAT_COMMON_CODE C , TAT_NODE_INFO B 
+						         WHERE B.NODE_NO= A.NODE_NO
+				               AND C.DETAIL_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE_PYTHON"/>
+				               AND C.DETAIL_CD = B.DETAIL_CODE_CCD
+						           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.SYSTEM_INFORMATION_CODE"/>) AS PYTHON 
+			  FROM TAT_NODE A
+			  WHERE A.NODE_NO IN (${condition.node_id})
+		) S WHERE S.PRC_DATE IS NOT NULL
+	</select>
+</mapper>

@@ -1,0 +1,365 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ntels.avocado.dao.atom.history.login.LoginHistoryExtendedMapper">
+
+    <!--
+        * 사용자그룹 콤보 조회
+         -->
+    <select id="listUserGroup" parameterType="String" resultType="java.util.HashMap">
+        SELECT USER_GROUP_ID AS ID
+             , USER_GROUP_NAME AS NAME
+           FROM T_NFW_USER_GROUP
+          WHERE LEVEL_ID <![CDATA[>=]]> #{user_group_level}
+        ORDER BY USER_GROUP_ID
+    </select>
+
+    <!--
+        * 사용자 콤보 조회
+         -->
+    <select id="listUser" resultType="java.util.HashMap">
+        SELECT
+              USER_ID   AS ID
+             ,USER_NAME AS NAME
+          FROM T_NFW_USER       A
+              ,T_NFW_USER_GROUP B
+         WHERE A.USER_GROUP_ID = B.USER_GROUP_ID
+           <if test="user_group_id != null and user_group_id != '' and user_group_id != 'all'">
+           AND A.USER_GROUP_ID = #{user_group_id}
+           </if>
+           <if test="user_group_level != null and user_group_level != '' and user_group_level != 'all'">
+           AND B.LEVEL_ID <![CDATA[>=]]> #{user_group_level}
+           </if>
+           AND A.USER_FLAG = 'Y'
+        ORDER BY A.USER_NAME
+    </select>
+
+    <!--
+        * 리스트 조회 
+         -->
+    <select id="listAction"
+            parameterType="com.ntels.avocado.domain.atom.history.login.Condition"
+            resultType="com.ntels.avocado.domain.atom.history.login.LoginHistoryExtended">
+        <include refid="com.ntels.avocado.dao.common.CommonMapper.paging_header"/>
+        SELECT
+             A.USER_GROUP_NAME
+            ,A.USER_ID
+            ,A.USER_NAME
+            ,A.PRC_DATE
+            ,A.LOGIN_STATUS
+            ,A.LOGIN_GATEWAY_IP
+            ,A.LOGOUT_DATE
+            ,A.LOGOUT_STATUS
+            ,A.CLIENT_TYPE
+            ,A.REMARK
+          FROM (
+                SELECT
+                      T.USER_GROUP_NAME                         AS USER_GROUP_NAME
+                     ,T.USER_ID                                 AS USER_ID
+                     ,T.USER_NAME                               AS USER_NAME
+					<choose>
+						<when test="condition.language != null and condition.language != '' ">
+							<if test="condition.language == 'en'">	
+								, CONCAT(DATE_FORMAT(CAST(T.PRC_DATE AS DATE), '%d-%m-%Y'),' ',STR_TO_DATE(CAST(SUBSTRING(T.PRC_TIME,1,6) AS TIME),'%H:%i:%s')) AS PRC_DATE
+								, CONCAT(DATE_FORMAT(CAST(T.LOGOUT_DATE AS DATE), '%d-%m-%Y'),' ',STR_TO_DATE(CAST(SUBSTRING(T.LOGOUT_TIME,1,6) AS TIME),'%H:%i:%s')) AS LOGOUT_DATE
+							</if>
+							<if test="condition.language == 'ko'">	
+								, CONCAT(DATE_FORMAT(CAST(T.PRC_DATE AS DATE), '%Y-%m-%d'),' ',STR_TO_DATE(CAST(SUBSTRING(T.PRC_TIME,1,6) AS TIME),'%H:%i:%s')) AS PRC_DATE
+								, CONCAT(DATE_FORMAT(CAST(T.LOGOUT_DATE AS DATE), '%Y-%m-%d'),' ',STR_TO_DATE(CAST(SUBSTRING(T.LOGOUT_TIME,1,6) AS TIME),'%H:%i:%s')) AS LOGOUT_DATE							
+							</if>	
+						</when>
+						<otherwise>
+								, CONCAT(DATE_FORMAT(CAST(T.PRC_DATE AS DATE), '%Y-%m-%d'),' ',STR_TO_DATE(CAST(SUBSTRING(T.PRC_TIME,1,6) AS TIME),'%H:%i:%s')) AS PRC_DATE
+								, CONCAT(DATE_FORMAT(CAST(T.LOGOUT_DATE AS DATE), '%Y-%m-%d'),' ',STR_TO_DATE(CAST(SUBSTRING(T.LOGOUT_TIME,1,6) AS TIME),'%H:%i:%s')) AS LOGOUT_DATE				
+						</otherwise>
+					</choose>	                     
+                     ,(SELECT CODE_NAME
+                         FROM T_NFW_COMMON_CODE
+                        WHERE GROUP_CODE = <include refid="com.ntels.avocado.dao.common.CodeDefine.PFNM_HISTORY_LOGIN_CONSTANTS_LOGIN_STATUS"/>
+                          AND DETAIL_CODE = T.LOGIN_STATUS)     AS LOGIN_STATUS
+                     ,T.LOGIN_GATEWAY_IP                        AS LOGIN_GATEWAY_IP
+                     ,(SELECT CODE_NAME
+                         FROM T_NFW_COMMON_CODE
+                        WHERE GROUP_CODE = <include refid="com.ntels.avocado.dao.common.CodeDefine.PFNM_HISTORY_LOGIN_CONSTANTS_LOGOUT_STATUS"/>
+                          AND DETAIL_CODE = T.LOGOUT_STATUS)    AS LOGOUT_STATUS
+                     ,(SELECT CODE_NAME
+                         FROM T_NFW_COMMON_CODE
+                        WHERE GROUP_CODE = <include refid="com.ntels.avocado.dao.common.CodeDefine.PFNM_HISTORY_LOGIN_CONSTANTS_CLIENT_TYPE"/>
+                          AND DETAIL_CODE = T.CLIENT_TYPE)      AS CLIENT_TYPE
+                     ,T.REMARK                                  AS REMARK
+                  FROM (
+                        SELECT
+                              CC.USER_GROUP_NAME                        AS USER_GROUP_NAME
+                             ,AA.USER_ID                                AS USER_ID
+		                     ,(SELECT USER_NAME
+		                         FROM T_NFW_USER
+		                        WHERE USER_ID = AA.USER_ID
+		                          AND USER_FLAG = 'Y')                  AS USER_NAME                             
+                             ,AA.PRC_DATE                               AS PRC_DATE
+                             ,AA.PRC_TIME                               AS PRC_TIME
+                             ,AA.LOGIN_STATUS                           AS LOGIN_STATUS
+                             ,AA.LOGIN_GATEWAY_IP                       AS LOGIN_GATEWAY_IP
+                             ,AA.LOGOUT_DATE                            AS LOGOUT_DATE
+                             ,AA.LOGOUT_TIME                            AS LOGOUT_TIME
+                             ,AA.LOGOUT_STATUS                          AS LOGOUT_STATUS
+                             ,AA.CLIENT_TYPE                            AS CLIENT_TYPE
+                             ,AA.REMARK                                 AS REMARK
+                          FROM T_NFW_LOGIN_HIST AA
+                              ,T_NFW_USER       BB
+                              ,T_NFW_USER_GROUP CC
+                        WHERE AA.USER_ID = BB.USER_ID
+                          AND BB.USER_GROUP_ID = CC.USER_GROUP_ID
+                          AND BB.USER_FLAG = 'Y'
+                          AND CAST((CONCAT(AA.PRC_DATE, AA.PRC_TIME)) AS UNSIGNED) BETWEEN CAST((CONCAT(#{condition.startDate},#{condition.startTime})) AS UNSIGNED) AND CAST((CONCAT(#{condition.endDate},#{condition.endTime})) AS UNSIGNED)
+                          <if test="condition.user_group_id != null and condition.user_group_id != '' and condition.user_group_id != 'all'">
+                          AND BB.USER_GROUP_ID = #{condition.user_group_id}
+                          </if>
+                          <if test="condition.user_id != null and condition.user_id != '' and condition.user_id != 'all'">
+                          AND AA.USER_ID = #{condition.user_id}
+                          </if>
+                          <if test="condition.session_user_group_level != null and condition.session_user_group_level != ''">
+                          AND CC.LEVEL_ID <![CDATA[>=]]> #{condition.session_user_group_level}
+                          </if>
+                        <!-- LIMIT #{start}, #{end} -->   
+                       ) T
+               ORDER BY CAST(T.PRC_DATE AS UNSIGNED) DESC
+                       ,CAST(T.PRC_TIME AS UNSIGNED) DESC
+               ) A
+        <include refid="com.ntels.avocado.dao.common.CommonMapper.paging_footer"/>
+    </select>
+    
+    <!--
+        * 리스트 Count
+         -->
+    <select id="count" parameterType="com.ntels.avocado.domain.atom.history.login.Condition"
+                       resultType="int">
+        SELECT
+            count(0)
+          FROM (
+                SELECT
+                      CC.USER_GROUP_NAME                        AS USER_GROUP_NAME
+                     ,AA.USER_ID                                AS USER_ID
+                     ,AA.PRC_DATE                               AS PRC_DATE
+                     ,AA.PRC_TIME                               AS PRC_TIME
+                     ,AA.LOGIN_STATUS                           AS LOGIN_STATUS
+                     ,AA.LOGIN_GATEWAY_IP                       AS LOGIN_GATEWAY_IP
+                     ,AA.LOGOUT_DATE                            AS LOGOUT_DATE
+                     ,AA.LOGOUT_TIME                            AS LOGOUT_TIME
+                     ,AA.LOGOUT_STATUS                          AS LOGOUT_STATUS
+                     ,AA.CLIENT_TYPE                            AS CLIENT_TYPE
+                     ,AA.REMARK                                 AS REMARK
+                  FROM T_NFW_LOGIN_HIST AA
+                      ,T_NFW_USER       BB
+                      ,T_NFW_USER_GROUP CC
+                WHERE AA.USER_ID = BB.USER_ID
+                  AND BB.USER_GROUP_ID = CC.USER_GROUP_ID
+                  AND BB.USER_FLAG = 'Y'
+                  AND CAST((CONCAT(AA.PRC_DATE, AA.PRC_TIME)) AS UNSIGNED) BETWEEN CAST((CONCAT(#{condition.startDate},#{condition.startTime})) AS UNSIGNED) AND CAST((CONCAT(#{condition.endDate},#{condition.endTime})) AS UNSIGNED)
+                  <if test="condition.user_group_id != null and condition.user_group_id != '' and condition.user_group_id != 'all'">
+                  AND BB.USER_GROUP_ID = #{condition.user_group_id}
+                  </if>
+                  <if test="condition.user_id != null and condition.user_id != '' and condition.user_id != 'all'">
+                  AND AA.USER_ID = #{condition.user_id}
+                  </if>
+                  <if test="condition.session_user_group_level != null and condition.session_user_group_level != ''">
+                  AND CC.LEVEL_ID <![CDATA[>=]]> #{condition.session_user_group_level}
+                  </if>
+               ) A
+    </select>
+
+    <!--
+        * 엑셀 조회 
+         -->
+    <select id="listExcel" parameterType="com.ntels.avocado.domain.atom.history.login.Condition"
+                           resultType="org.apache.commons.collections.map.CaseInsensitiveMap">
+        SELECT
+             A.USER_GROUP_NAME  AS "User Group"
+            ,A.USER_ID          AS "User ID"
+            ,A.USER_NAME        AS "User Name"
+            ,A.PRC_DATE         AS "Login Date"
+            ,A.LOGIN_STATUS     AS "Login Status"
+            ,A.LOGIN_GATEWAY_IP AS "IP"
+            ,A.LOGOUT_DATE      AS "Logout Date"
+            ,A.LOGOUT_STATUS    AS "Logout Status"
+            ,A.CLIENT_TYPE      AS "Client Type"
+            ,A.REMARK           AS "Remark"
+          FROM (
+
+                SELECT
+                      T.USER_GROUP_NAME                         AS USER_GROUP_NAME
+                     ,T.USER_ID                                 AS USER_ID
+                     ,T.USER_NAME                               AS USER_NAME
+					<choose>
+						<when test="condition.language != null and condition.language != '' ">
+							<if test="condition.language == 'en'">	
+								, CAST(CONCAT(DATE_FORMAT(CAST(T.PRC_DATE AS DATE), '%d-%m-%Y'),' ',STR_TO_DATE(CAST(SUBSTRING(T.PRC_TIME,1,6) AS TIME),'%H:%i:%s')) AS CHAR) AS PRC_DATE
+								, CAST(CONCAT(DATE_FORMAT(CAST(T.LOGOUT_DATE AS DATE), '%d-%m-%Y'),' ',STR_TO_DATE(CAST(SUBSTRING(T.LOGOUT_TIME,1,6) AS TIME),'%H:%i:%s')) AS CHAR) AS LOGOUT_DATE
+							</if>
+							<if test="condition.language == 'ko'">	
+								, CAST(CONCAT(DATE_FORMAT(CAST(T.PRC_DATE AS DATE), '%Y-%m-%d'),' ',STR_TO_DATE(CAST(SUBSTRING(T.PRC_TIME,1,6) AS TIME),'%H:%i:%s')) AS CHAR) AS PRC_DATE
+								, CAST(CONCAT(DATE_FORMAT(CAST(T.LOGOUT_DATE AS DATE), '%Y-%m-%d'),' ',STR_TO_DATE(CAST(SUBSTRING(T.LOGOUT_TIME,1,6) AS TIME),'%H:%i:%s')) AS CHAR) AS LOGOUT_DATE							
+							</if>	
+						</when>
+						<otherwise>
+								, CAST(CONCAT(DATE_FORMAT(CAST(T.PRC_DATE AS DATE), '%Y-%m-%d'),' ',STR_TO_DATE(CAST(SUBSTRING(T.PRC_TIME,1,6) AS TIME),'%H:%i:%s')) AS CHAR) AS PRC_DATE
+								, CAST(CONCAT(DATE_FORMAT(CAST(T.LOGOUT_DATE AS DATE), '%Y-%m-%d'),' ',STR_TO_DATE(CAST(SUBSTRING(T.LOGOUT_TIME,1,6) AS TIME),'%H:%i:%s')) AS CHAR) AS LOGOUT_DATE				
+						</otherwise>
+					</choose>	
+                     ,(SELECT CODE_NAME
+                         FROM T_NFW_COMMON_CODE
+                        WHERE GROUP_CODE = <include refid="com.ntels.avocado.dao.common.CodeDefine.PFNM_HISTORY_LOGIN_CONSTANTS_LOGIN_STATUS"/>
+                          AND DETAIL_CODE = T.LOGIN_STATUS)     AS LOGIN_STATUS
+                     ,T.LOGIN_GATEWAY_IP                        AS LOGIN_GATEWAY_IP
+                     ,(SELECT CODE_NAME
+                         FROM T_NFW_COMMON_CODE
+                        WHERE GROUP_CODE = <include refid="com.ntels.avocado.dao.common.CodeDefine.PFNM_HISTORY_LOGIN_CONSTANTS_LOGOUT_STATUS"/>
+                          AND DETAIL_CODE = T.LOGOUT_STATUS)    AS LOGOUT_STATUS
+                     ,(SELECT CODE_NAME
+                         FROM T_NFW_COMMON_CODE
+                        WHERE GROUP_CODE = <include refid="com.ntels.avocado.dao.common.CodeDefine.PFNM_HISTORY_LOGIN_CONSTANTS_CLIENT_TYPE"/>
+                          AND DETAIL_CODE = T.CLIENT_TYPE)      AS CLIENT_TYPE
+                     ,T.REMARK                                  AS REMARK
+                  FROM (
+                        SELECT
+                              CC.USER_GROUP_NAME                        AS USER_GROUP_NAME
+                             ,AA.USER_ID                                AS USER_ID
+		                     ,(SELECT USER_NAME
+		                         FROM T_NFW_USER
+		                        WHERE USER_ID = AA.USER_ID
+		                          AND USER_FLAG = 'Y')                  AS USER_NAME                             
+                             ,AA.PRC_DATE                               AS PRC_DATE
+                             ,AA.PRC_TIME                               AS PRC_TIME
+                             ,AA.LOGIN_STATUS                           AS LOGIN_STATUS
+                             ,AA.LOGIN_GATEWAY_IP                       AS LOGIN_GATEWAY_IP
+                             ,AA.LOGOUT_DATE                            AS LOGOUT_DATE
+                             ,AA.LOGOUT_TIME                            AS LOGOUT_TIME
+                             ,AA.LOGOUT_STATUS                          AS LOGOUT_STATUS
+                             ,AA.CLIENT_TYPE                            AS CLIENT_TYPE
+                             ,AA.REMARK                                 AS REMARK
+                          FROM T_NFW_LOGIN_HIST AA
+                              ,T_NFW_USER       BB
+                              ,T_NFW_USER_GROUP CC
+                        WHERE AA.USER_ID = BB.USER_ID
+                          AND BB.USER_GROUP_ID = CC.USER_GROUP_ID
+                          AND BB.USER_FLAG = 'Y'
+                          AND CAST((CONCAT(AA.PRC_DATE, AA.PRC_TIME)) AS UNSIGNED) BETWEEN CAST((CONCAT(#{condition.startDate},#{condition.startTime})) AS UNSIGNED) AND CAST((CONCAT(#{condition.endDate},#{condition.endTime})) AS UNSIGNED)
+                          <if test="condition.user_group_id != null and condition.user_group_id != '' and condition.user_group_id != 'all'">
+                          AND BB.USER_GROUP_ID = #{condition.user_group_id}
+                          </if>
+                          <if test="condition.user_id != null and condition.user_id != '' and condition.user_id != 'all'">
+                          AND AA.USER_ID = #{condition.user_id}
+                          </if>
+                          <if test="condition.session_user_group_level != null and condition.session_user_group_level != ''">
+                          AND CC.LEVEL_ID <![CDATA[>=]]> #{condition.session_user_group_level}
+                          </if>
+                       ) T
+               ORDER BY CAST(T.PRC_DATE AS UNSIGNED) DESC
+                       ,CAST(T.PRC_TIME AS UNSIGNED) DESC
+               ) A
+    </select>
+
+    <!--
+        * 로그인 히스토리 등록
+    -->
+    <insert id="insertLoginHistory" parameterType="com.ntels.avocado.domain.atom.history.login.LoginHistoryExtended">
+        INSERT /* LoginHistoryExtendedMapper.insertLoginHistory */ 
+             INTO TAT_LOGIN_HIST (
+              USER_ID
+             <if test="loginHistory.loginResult != null and loginHistory.loginResult != ''">
+             ,LOGIN_RESULT
+             </if>
+             <if test="loginHistory.loginIp != null and loginHistory.loginIp != ''">
+             ,LOGIN_IP
+             </if>
+             <if test="loginHistory.inout != null and loginHistory.inout != '' and loginHistory.inout == 'IN'">
+             , LOGIN_DATE
+             </if>
+             <if test="loginHistory.inout != null and loginHistory.inout != '' and loginHistory.inout == 'OUT'">
+             , LOGOUT_DATE
+             </if>
+             <if test="loginHistory.loginClientType != null and loginHistory.loginClientType != ''">
+             , LOGIN_CLIENT_TYPE
+             </if>
+             <if test="loginHistory.description != null and loginHistory.description != ''">
+             ,DESCRIPTION
+             </if>
+             <if test="loginHistory.failCount != null and loginHistory.failCount != ''">
+             ,FAIL_COUNT
+             </if>
+             <if test="loginHistory.sessionId != null and loginHistory.sessionId != ''">
+             ,SESSION_ID
+             </if>
+        )VALUES(
+              #{loginHistory.loginId}
+             <if test="loginHistory.loginResult != null and loginHistory.loginResult != ''">
+             ,#{loginHistory.loginResult}
+             </if>
+             <if test="loginHistory.loginIp != null and loginHistory.loginIp != ''">
+             ,#{loginHistory.loginIp}
+             </if>
+             <if test="loginHistory.inout != null and loginHistory.inout != '' and loginHistory.inout == 'IN'">
+             , STR_TO_DATE( #{loginHistory.loginDate}, '%Y%m%d %H%i%s')
+             </if>
+             <if test="loginHistory.inout != null and loginHistory.inout != '' and loginHistory.inout == 'OUT'">
+             , NOW()
+             </if>
+             <if test="loginHistory.loginClientType != null and loginHistory.loginClientType != ''">
+             ,#{loginHistory.loginClientType}
+             </if>
+             <if test="loginHistory.description != null and loginHistory.description != ''">
+             ,#{loginHistory.description}
+             </if>
+             <if test="loginHistory.failCount != null and loginHistory.failCount != ''">
+             , #{loginHistory.failCount}
+             </if>
+             <if test="loginHistory.sessionId != null and loginHistory.sessionId != ''">
+             , #{loginHistory.sessionId}
+             </if>
+        )
+    </insert>
+
+    <!--
+        * 로그인 히스토리 수정
+    -->
+    <update id="updateLoginHistory" parameterType="com.ntels.avocado.domain.atom.history.login.LoginHistoryExtended">
+        UPDATE /* LoginHistoryExtendedMapper.updateLoginHistory */
+              TAT_LOGIN_HIST SET
+              LOGIN_CLIENT_TYPE = #{loginHistory.loginClientType}
+             <if test="loginHistory.description != null and loginHistory.description != ''">
+             , DESCRIPTION  = #{loginHistory.description}
+             </if>
+             <if test="loginHistory.loginResult != null and loginHistory.loginResult != ''">
+             ,LOGIN_RESULT = #{loginHistory.loginResult}
+             </if>
+             <if test="loginHistory.loginIp != null and loginHistory.loginIp != ''">
+             ,LOGIN_IP = #{loginHistory.loginIp}
+             </if>
+             <if test="loginHistory.inout != null and loginHistory.inout != '' and loginHistory.inout == 'OUT'">
+             ,LOGOUT_DATE = NOW()
+             </if>
+             <if test="loginHistory.logoutResult != null and loginHistory.logoutResult != '' and loginHistory.inout == 'OUT'">
+             ,LOGOUT_RESULT = #{loginHistory.logoutResult}
+             </if>
+         WHERE USER_ID  = #{loginHistory.userId}
+           AND LOGIN_DATE = STR_TO_DATE( #{loginHistory.loginDate}, '%Y%m%d %H%i%s')
+           <if test="loginHistory.loginIp != null and loginHistory.loginIp != ''">
+           AND LOGIN_IP = #{loginHistory.loginIp}
+           </if>
+    </update>
+
+    <!--
+        * 로그인 히스토리 수정
+    -->
+    <update id="destoryLoginHistory" parameterType="com.ntels.avocado.domain.atom.history.login.LoginHistoryExtended">
+        UPDATE TAT_LOGIN_HIST SET
+              LOGIN_CLIENT_TYPE = #{loginHistory.loginClientType}
+             <if test="loginHistory.description != null and loginHistory.description != ''">
+             , DESCRIPTION  = #{loginHistory.description}
+             </if>
+             ,LOGOUT_DATE = NOW()
+         WHERE USER_ID  = #{loginHistory.userId}
+           AND LOGIN_DATE = STR_TO_DATE( #{loginHistory.loginDate}, '%Y%m%d %H%i%s')
+           AND LOGIN_IP = #{loginHistory.loginIp}
+    </update>
+</mapper>

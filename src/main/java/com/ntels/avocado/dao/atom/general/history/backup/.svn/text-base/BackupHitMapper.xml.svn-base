@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ntels.avocado.dao.atom.general.history.backup.BackupHitMapper">
+	
+    <sql id="whereClause">
+		WHERE 1 = 1
+		AND DATE_FORMAT(A.PRC_DATE,'%Y%m%d%H%i') <![CDATA[>=]]> CONCAT(#{condition.startDate}, #{condition.startTime})
+		AND DATE_FORMAT(A.PRC_DATE,'%Y%m%d%H%i') <![CDATA[<=]]> CONCAT(#{condition.endDate}, #{condition.endTime}) 
+	 	<if test="condition.node_id != null and condition.node_id != '' and condition.node_id != 'all' ">
+		   	AND A.NODE_NO = #{condition.node_id}
+		</if>
+		<if test="condition.group_code  != null and condition.group_code != '' and condition.group_code != 'all'  ">
+		   	AND A.GROUP_CODE = #{condition.group_code}
+		</if> 
+    </sql>
+
+    <select id="count" parameterType="com.ntels.avocado.domain.atom.general.history.backup.BackupHitDomain" resultType="int">
+        SELECT COUNT(*)
+		FROM   TAT_MNT_BACKUP_HIST A
+		<include refid="whereClause"/>
+    </select>
+
+
+    <select id="list" resultType="com.ntels.avocado.domain.atom.general.history.backup.BackupHitDomain" databaseId="mysql">
+       <include refid="com.ntels.avocado.dao.common.CommonMapper.paging_header"/>
+       	SELECT *
+       	FROM
+       	(
+			SELECT
+				  A.NODE_NO AS NODE_ID
+				, (SELECT NODE_NAME FROM TAT_NODE N WHERE N.NODE_NO=A.NODE_NO) AS NODE_NAME
+				, A.PKG_NAME
+				, A.NODE_TYPE
+	      		, A.RESULT_NO
+				, IFNULL(CONCAT(DATE_FORMAT(A.PRC_DATE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language})) ,' ',DATE_FORMAT(A.PRC_DATE, '%H:%i')),'') AS PRC_DATE
+	      		, A.GROUP_CODE
+	      		, IFNULL((SELECT CODE_NAME
+		               FROM   TAT_COMMON_CODE
+		               WHERE  GROUP_CD		 = <include refid="com.ntels.avocado.dao.common.CodeDefine.BACKUP_RESTORE_GROUP_CODE"/>
+		               AND    DETAIL_CD = A.GROUP_CODE),'') AS GROUP_CODE_NM
+	      		, A.DST_FLAG
+	      		, A.PROCESS_RESULT
+	      		, IFNULL(A.BACKUP_NAME,'') AS BACKUP_NAME
+	      		, A.BACKUP_PATH
+	      		, IFNULL(A.FILE_SIZE,'') AS FILE_SIZE
+	      		, A.REG_DATE
+	      		, A.REG_ID		
+	      		, IFNULL(A.DESCRIPTION,'') AS DESCRIPTION
+      			, IFNULL((SELECT CODE_NAME
+	               FROM   TAT_COMMON_CODE
+	               WHERE  GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.BACKUP_RESTORE_PROCESS_RESULT"/>
+	               AND    DETAIL_CD = A.PROCESS_RESULT),'') AS PROCESS_RESULT_NM
+			FROM  TAT_MNT_BACKUP_HIST A 
+			<include refid="whereClause"/>
+       	) A
+       	 <if test="condition.orderBy != '' and condition.orderBy != null">
+			 ORDER BY ${condition.orderBy} ,RESULT_NO DESC
+		 </if>
+		 <if test="condition.orderBy == '' or condition.orderBy == null">
+ 			ORDER BY PRC_DATE ASC ,RESULT_NO DESC
+		</if>
+       <include refid="com.ntels.avocado.dao.common.CommonMapper.paging_footer"/>
+   </select> 
+	
+	<select id="detail" resultType="com.ntels.avocado.domain.atom.general.history.backup.BackupHitDomain">
+		SELECT  PKG_NAME
+			  ,	PRC_DATE
+			  , BACKUP_NAME
+			  , BACKUP_PATH
+			  , FILE_SIZE
+		FROM TAT_MNT_BACKUP_HIST
+		WHERE 1=1
+	   	AND NODE_NO = #{condition.nodeId}
+	</select>
+	
+    <select id="listExcel" resultType="java.util.LinkedHashMap" databaseId="mysql">
+       	SELECT 
+			    PKG_NAME AS "Package"
+			  , NODE_NAME AS "Node"
+			  , PRC_DATE  AS "Date"
+			  ,	GROUP_CODE_NM AS "Category"
+			  ,	BACKUP_NAME AS "Backup File Name"
+			  ,	FILE_SIZE AS "File Size"
+			  ,	PROCESS_RESULT_NM AS "Result"
+			  ,	DESCRIPTION AS "Description"
+       	FROM
+       	(
+			SELECT
+				  A.NODE_NO
+				, (SELECT NODE_NAME FROM TAT_NODE N WHERE N.NODE_NO=A.NODE_NO AND N.PKG_NAME=A.PKG_NAME AND N.NODE_TYPE=A.NODE_TYPE) AS NODE_NAME
+				, A.PKG_NAME
+				, A.NODE_TYPE
+	      		, A.RESULT_NO
+				, IFNULL(CONCAT(DATE_FORMAT(A.PRC_DATE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language})) ,' ',DATE_FORMAT(A.PRC_DATE, '%H:%i')),'') AS PRC_DATE
+	      		, A.GROUP_CODE
+	      		, IFNULL((SELECT CODE_NAME
+		               FROM   TAT_COMMON_CODE
+		               WHERE  GROUP_CD		 = <include refid="com.ntels.avocado.dao.common.CodeDefine.BACKUP_RESTORE_GROUP_CODE"/>
+		               AND    DETAIL_CD = A.GROUP_CODE),'') AS GROUP_CODE_NM
+	      		, A.DST_FLAG
+	      		, A.PROCESS_RESULT
+	      		, IFNULL(A.BACKUP_NAME,'') AS BACKUP_NAME
+	      		, A.BACKUP_PATH
+	      		, IFNULL(A.FILE_SIZE,'') AS FILE_SIZE
+	      		, A.REG_DATE
+	      		, A.REG_ID		
+	      		, IFNULL(A.DESCRIPTION,'')AS DESCRIPTION
+      			, IFNULL((SELECT CODE_NAME
+	               FROM   TAT_COMMON_CODE
+	               WHERE  GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.BACKUP_RESTORE_PROCESS_RESULT"/>
+	               AND    DETAIL_CD = A.PROCESS_RESULT),'') AS PROCESS_RESULT_NM
+			FROM  TAT_MNT_BACKUP_HIST A 
+			<include refid="whereClause"/>
+       	) A
+       	 <if test="condition.orderBy != '' and condition.orderBy != null">
+			 ORDER BY ${condition.orderBy} ,RESULT_NO DESC
+		 </if>
+		 <if test="condition.orderBy == '' or condition.orderBy == null">
+ 			ORDER BY PRC_DATE ASC ,RESULT_NO DESC
+		</if>
+   </select> 
+    
+	
+</mapper>

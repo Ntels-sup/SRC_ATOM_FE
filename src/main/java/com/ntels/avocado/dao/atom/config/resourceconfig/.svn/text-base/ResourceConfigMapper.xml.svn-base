@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ntels.avocado.dao.atom.config.resourceconfig.ResourceConfigMapper">
+
+	<select id="listNodeType" resultType="java.util.Map">
+		SELECT NODE_TYPE AS ID
+		     , NODE_TYPE AS NAME
+		  FROM TAT_NODE_TYPE
+		 WHERE 1=1
+		   AND PKG_NAME = #{pkgName}
+		 ORDER BY NODE_TYPE
+	</select>
+	
+	<select id="listResourceGrp" resultType="java.util.Map">
+		SELECT RSC_GRP_ID   AS ID
+		     , RSC_GRP_NAME AS NAME
+		  FROM TAT_RSC_GRP_DEF
+		 WHERE 1=1
+		 ORDER BY RSC_GRP_ID
+	</select>
+	
+	<select id="listStatPeriod" resultType="java.util.Map">
+		SELECT DETAIL_CD  AS ID 
+		     , CODE_NAME  AS NAME
+		  FROM TAT_COMMON_CODE 
+		 WHERE 1=1
+		   AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_GROUP_CODE_STAT_PERIOD" />
+		 ORDER BY DISPLAY_ORDER
+	</select>
+	
+	<select id="rscGrpConfig" resultType="com.ntels.avocado.domain.atom.config.resourceconfig.ResourceConfigDomain">
+		SELECT RSC_GRP_ID
+		     , USE_YN AS RSC_GRP_USE_YN
+		     , PERIOD
+		     , STAT_PERIOD
+		     , VNFM_SEND_YN
+		     , STAT_YN
+		  FROM TAT_RSC_GRP_DEF
+		 WHERE 1=1
+		   AND RSC_GRP_ID = #{condition.rscGrpId}
+	</select>
+	
+	<select id="rscConifg" resultType="com.ntels.avocado.domain.atom.config.resourceconfig.ResourceConfigDomain">
+		SELECT RSC_ID
+		     , PKG_NAME
+		     , NODE_TYPE
+		     , RSC_NAME
+		     , USE_YN AS RSC_USE_YN
+		  FROM TAT_RSC_DEF
+		 WHERE 1=1
+		   AND RSC_GRP_ID = #{condition.rscGrpId}
+		   AND PKG_NAME = #{condition.pkgName}
+		   AND NODE_TYPE = #{condition.nodeType}
+	</select>
+	
+	<update id="modifyRscGrpConifg" parameterType="com.ntels.avocado.domain.atom.config.resourceconfig.ResourceConfigDomain">
+		UPDATE TAT_RSC_GRP_DEF
+		   SET USE_YN = #{condition.rsc_grp_use_yn}
+		     , PERIOD = #{condition.period}
+		     , STAT_PERIOD = #{condition.stat_period}
+		     , VNFM_SEND_YN = #{condition.vnfm_send_yn}
+		     , STAT_YN = #{condition.stat_yn}
+		 WHERE 1=1
+		   AND RSC_GRP_ID = #{condition.rsc_grp_id}
+	</update>
+	
+	<update id="modifyRscConifg" parameterType="com.ntels.avocado.domain.atom.config.resourceconfig.ResourceConfigDomain">
+		UPDATE TAT_RSC_DEF
+		   SET USE_YN = #{condition.rsc_use_yn}
+		 WHERE 1=1
+		   AND RSC_ID = #{condition.rsc_id}
+		   AND PKG_NAME = #{condition.pkg_name}
+		   AND NODE_TYPE = #{condition.node_type}
+	</update>
+	
+</mapper>

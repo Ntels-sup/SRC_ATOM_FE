@@ -1,0 +1,367 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ntels.avocado.dao.atom.general.webcli.WebCliMapper">
+
+   	<select id="tableSel" resultType="java.util.HashMap">
+    	SELECT 'TABLE' AS ID
+       		 , 'TABLE' AS NAME
+        UNION 
+        SELECT * FROM (SELECT GROUP_NAME AS ID
+                            , GROUP_NAME   AS NAME
+                           FROM T_MDF_XML_TABLE_LIST
+                          WHERE GROUP_NAME != ''
+                         GROUP BY GROUP_NAME
+                         ORDER BY GROUP_NAME
+                       ) TBL
+    </select>
+    
+	<select id="xmlTable" resultType="java.util.HashMap">
+		SELECT TABLE_NAME AS ID
+       		 , TABLE_NAME AS NAME 
+       	    FROM (SELECT DISTINCT TABLE_NAME FROM T_MDF_XML_TABLE_LIST)TBL
+    </select>
+    
+    <select id="xmlComponent" resultType="java.util.HashMap">
+    	SELECT COMPONENT_NAME AS ID
+       		 , COMPONENT_NAME AS NAME 
+       	    FROM (SELECT DISTINCT COMPONENT_NAME FROM T_MDF_XML_TABLE_LIST WHERE GROUP_NAME = #{tableSel}) TBL
+    </select>
+	
+	<select id="getServiceName" resultType="java.util.HashMap">
+		 SELECT SERVICE_ID, SERVICE_NAME		
+	         FROM T_NFW_SERVICE
+             WHERE 1 = 1
+    </select>	
+    
+	<select id="getProcessName" resultType="java.util.HashMap">
+		 SELECT PROCESS_ID, PROCESS_NAME		
+	         FROM T_NFW_PROCESS
+             WHERE 1 = 1
+    </select>	
+
+	<select id="getComponentName" resultType="java.util.HashMap">
+		 SELECT COMPONENT_ID, COMPONENT_NAME		
+	         FROM T_NFW_COMPONENT
+             WHERE 1 = 1
+    </select>	
+    		
+   	<select id="getQueueName" resultType="java.util.HashMap">
+		 SELECT QUEUE_ID
+		      , QUEUE_NAME
+		      , FDB_USE_YN 
+		     FROM T_NFW_MESSAGE_QUEUE
+             WHERE 1 = 1
+    </select>	
+	<!-- 
+		* 필수 입력값 조회
+		 -->
+	<select id="listInputFormat" resultType="hashmap">
+		 SELECT SEQ_NO
+		 	  , TYPE_ID
+		 	  , TYPE_NAME
+		 	  , REQUIRED_ITEMS		
+	         FROM T_NFW_CLI_INPUT_FORMAT
+             WHERE 1=1
+             ORDER BY SEQ_NO
+    </select>
+    	
+	<!-- 
+		* 키워드 테이블 조회
+		 -->
+	<select id="getKeywords" resultType="String">
+		 SELECT COMMAND
+		         FROM T_NFW_CLI_DEF
+                WHERE 1=1
+                <if test="keywords != null and keywords != ''">AND UPPER(COMMAND) LIKE UPPER(#{keywords})||'%'</if>
+                <if test="command_type != null and command_type != ''">AND COMMAND_TYPE = #{command_type}</if>
+               ORDER BY COMMAND
+    </select>
+	
+	<!-- 
+		* Command(명령어) 리스트 조회
+		 -->
+	<select id="listCommands" resultType="hashmap">
+		 SELECT COMMAND AS ID
+		      , COMMAND AS NAME
+		      , DESCRIPTION
+		     FROM T_NFW_CLI_DEF
+		    WHERE USE_FLAG = 'Y'
+                <if test="user_group_level != null and user_group_level != ''">AND LEVEL_ID<![CDATA[>=]]> #{user_group_level}</if>
+           ORDER BY COMMAND
+    </select>
+    
+    
+    <!-- 
+		* get Command 조회
+		 -->
+	<select id="getCommand" resultType="hashmap">
+		 SELECT PACKET_TYPE
+		      , COMMAND_TYPE
+		      , COMMAND_ID
+		      , INPUT_LEVEL
+		      , DESCRIPTION
+		      , ARGUMENT_FLAG
+		      , PACKET_FORMAT
+		      , INPUT_FORMAT
+		      , LOCAL_ONLY
+		      , PFM_COMPONENT_ID
+		     FROM T_NFW_CLI_DEF
+		    WHERE USE_FLAG = 'Y'
+              AND COMMAND = #{command}           
+    </select>
+    
+    <!-- 
+		* 시스템에 존재 유무 체크한다.
+		 -->
+	<select id="systemCount" resultType="Integer">
+		 SELECT COUNT(*)
+		     FROM T_NFW_SYSTEM
+		    WHERE SYSTEM_NAME = #{argument}           
+    </select>
+    
+	<!-- 
+		* Hist 이력 조회
+		 -->     
+	<select id="listHistory" resultType="hashmap">
+		 SELECT COMMAND
+		      , SYSTEM_NAME
+		      , PACKAGE_NAME
+		      , ARGS
+			  , CASE TRIM(REQ_DATE) 
+			       WHEN NULL THEN ''
+			       ELSE CONCAT( SUBSTR(REQ_DATE, 7, 2) , '-' , SUBSTR(REQ_DATE, 5, 2) , '-' , SUBSTR(REQ_DATE, 1, 4) , ' ' , SUBSTR(REQ_DATE, 9, 2) , ':' , SUBSTR(REQ_DATE, 11, 2) , ':' , SUBSTR(REQ_DATE, 13, 2) )
+			    END     
+			    AS REQ_DATE
+			  , CASE TRIM(RES_DATE) 
+			       WHEN NULL THEN ''
+			       ELSE CONCAT( SUBSTR(RES_DATE, 7, 2) , '-' , SUBSTR(RES_DATE, 5, 2) , '-' , SUBSTR(RES_DATE, 1, 4) , ' ' , SUBSTR(RES_DATE, 9, 2) , ':' , SUBSTR(RES_DATE, 11, 2) , ':' , SUBSTR(RES_DATE, 13, 2) )
+			    END     
+			    AS RES_DATE
+			  , RESULT 
+			  , CASE TRIM(RESULT) 
+			       WHEN 'Y' THEN 'Success' 
+			       WHEN 'N' THEN 'Fail'
+			       ELSE ''
+			    END     
+			    AS RESULT_STR
+		    FROM (SELECT COMMAND
+		               , (SELECT SYSTEM_NAME FROM T_NFW_SYSTEM WHERE SYSTEM_ID = TBL.SYSTEM_ID) AS SYSTEM_NAME
+                       , (SELECT PACKAGE_NAME FROM T_NFW_PACKAGE WHERE PACKAGE_ID = TBL.PACKAGE_ID) AS PACKAGE_NAME
+                       , ARGS
+                       , CONCAT(PRC_DATE,PRC_TIME) AS REQ_DATE
+	                   , CONCAT(END_DATE,END_TIME) AS RES_DATE
+	                   , RESULT
+	                  FROM T_NFW_WORK_HIST TBL
+                     WHERE 1=1 
+                      AND COMMAND != ''
+                      AND CLIENT_TYPE = '0'
+                      AND USER_ID = #{user_id}
+                    ORDER BY SEQ DESC
+                  ) TBL
+          LIMIT 100
+    </select>
+	
+	<!-- 
+		* DIS-TRACE 명령어 일때 조회
+		 -->
+    <select id="listTrace" resultType="hashmap">
+    	SELECT TRACE_REQ_ID
+    		 , NVL(PACKAGE_ID,'') AS PACKAGE_ID
+    		 , NVL(SYSTEM_ID, '') AS SYSTEM_ID
+    		 , NVL(SERVICE_ID, '') AS SERVICE_ID
+    		 , TO_CHAR(START_DATETIME,'YYYY-MM-DD HH24:MI:SS') AS START_DATETIME
+    		 , TO_CHAR(END_DATETIME,'YYYY-MM-DD HH24:MI:SS') AS END_DATETIME
+    		 , NVL(TRACE_TYPE, '') AS TRACE_TYPE
+    		 , NVL(CONDITION_VALUE, '') AS CONDITION_VALUE
+ 			FROM T_UDBS_TRACE_REQ
+           WHERE SYSTEM_ID  = #{system_id}
+             AND PACKAGE_ID = #{package_id}
+         ORDER BY TRACE_REQ_ID
+    </select> 
+    
+    <!-- 
+		* DIST-XML 명령어 일때 조회
+		 -->
+    <select id="distXml" statementType="CALLABLE" parameterType="hashmap">
+		{ CALL UP_CREATE_DIST_ALL_XMLFILE(			
+		    #{package_id, mode=IN, jdbcType=CHAR, javaType=string}
+		  , #{system_id, mode=IN, jdbcType=CHAR, javaType=string}
+		  , #{result, mode=OUT, jdbcType=INTEGER, javaType=Integer, resultMap=result}
+		  ) }
+     </select>
+     
+     <resultMap id="result" type="hashmap"></resultMap>
+     
+     <!-- 
+		* CLI_HIST 테이블 입력
+		 -->
+    <insert id="insert" parameterType="com.ntels.avocado.domain.atom.general.webcli.WebCliDomain" useGeneratedKeys="true" keyProperty="seq">
+		INSERT INTO T_NFW_WORK_HIST (
+			    USER_ID
+			  , MENU_NO
+			  , WORK_TYPE
+			  , PRC_DATE
+			  , PRC_TIME
+			  , END_DATE
+			  , END_TIME
+			  , COMMAND
+			  , ARGS
+			  , CLIENT_TYPE
+			  , GATEWAY_IP
+			  , RESULT
+			)
+	    	VALUES (
+			    #{user_id}
+	    	  , (SELECT MENU_NO FROM T_NFW_MENU WHERE VIEW_PATH LIKE '%commandline%' LIMIT 1)
+	    	  , '0'
+	    	  ,	DATE_FORMAT(NOW(), '%Y%m%d')
+	    	  , CONCAT(DATE_FORMAT(NOW(), '%H%i%s'), '00')
+	    	  ,	DATE_FORMAT(NOW(), '%Y%m%d')
+	    	  , CONCAT(DATE_FORMAT(NOW(), '%H%i%s'), '00')
+	    	  , #{command}
+	    	  , #{argument}
+	    	  , '0'
+	    	  , #{gateway_ip}
+	    	  , ''
+	    	)   	
+ 			
+    </insert>
+     
+	<!-- 
+		* CLI_HIST 테이블 수정
+		 -->     
+    <update id="update" parameterType="hashmap">
+    	UPDATE T_NFW_WORK_HIST 
+    		SET 
+    			END_DATE = DATE_FORMAT(NOW(), '%Y%m%d')
+    		  , END_TIME = CONCAT(DATE_FORMAT(NOW(), '%H%i%s'), '00')
+    		  , RESULT = #{result}
+    		  <if test='result == "N"'>    		   
+    		   , ARGS = #{message}
+    		  </if>
+    	    WHERE SEQ = #{sequence}    		
+    </update>
+    
+    <!-- 
+    	* 시스템 ID 조회
+    	 -->
+    <select id="searchSystemID" parameterType="String" resultType="String">
+    	SELECT SYSTEM_ID 
+    	    FROM T_NFW_SYSTEM 
+    	   WHERE SYSTEM_NAME = #{argument}
+    </select>
+    
+    <!-- 
+		* DIS-SYSGROUP 조회
+		 -->     
+    <select id="distSysGroup" parameterType="String" resultType="hashmap">
+    	SELECT A.SYSTEM_GROUP_NAME AS SYSTEM_GROUP_NAME
+    	     , B.SYSTEM_NAME AS SYSTEM_NAME
+    	     , B.SYSTEM_ID AS SYSTEM_ID
+    	     , A.ACTIVE_FLAG AS ACTIVE_FLAG
+    	   FROM (SELECT    	   				 
+		    		SYSTEM_GROUP_ID
+		    	  , SYSTEM_GROUP_NAME
+		    	  , SYSTEM_ID
+		    	  , DECODE(ACTIVE_FLAG, 'A', 'ACTIVE', 'STAND BY') AS ACTIVE_FLAG 
+		    	  FROM T_NFW_SYSTEM_GROUP 
+		    	 WHERE SYSTEM_GROUP_ID = (SELECT SYSTEM_GROUP_ID 
+		    	                               FROM T_NFW_SYSTEM_GROUP 
+		    	                              WHERE SYSTEM_ID = #{system_id, jdbcType=VARCHAR})
+		        ) A
+		      , T_NFW_SYSTEM B
+		  WHERE A.SYSTEM_ID = B.SYSTEM_ID
+		        
+    </select>
+    
+    <!-- 
+		* 메뉴 권한 가져오기
+		-->
+	<select id="getAuth" resultType="String">
+		SELECT B.AUTH_TYPE AS AUTH_TYPE 
+		    FROM (SELECT MENU_NO 
+		              FROM T_NFW_MENU 
+		             WHERE VIEW_PATH LIKE CONCAT('%', #{url})
+		         ) A
+		         , T_NFW_USER_GROUP_AUTH B 
+		   WHERE A.MENU_NO = B.MENU_NO
+             AND B.USER_GROUP_ID = #{user_group_id}
+	</select>
+	
+	<select id="listCMD" resultType="java.util.HashMap">
+    	/* WebCliMapper.xml listCMD */
+    	SELECT C.CMD_CODE
+		     , C.CMD_NAME
+		     , C.CMD_GROUP_NAME
+		  FROM TAT_CMD			C
+		 WHERE 1=1
+		   AND C.PKG_NAME 		= 'ATOM'/* 지금 이 상태에서는 이렇게하는 방법밖에 없음... */
+		 ORDER BY
+		       C.CMD_NAME
+    </select>
+	
+	<select id="listCMDArg" resultType="java.util.HashMap">
+    	/* WebCliMapper.xml listCMDArg */
+    	SELECT CA.CMD_CODE
+		     , CA.PKG_NAME
+		     , CA.ARG_NAME
+		     , CA.ARG_SEQUENCE
+		  FROM TAT_CMD_ARG		CA
+		 WHERE 1=1
+		   AND CMD_CODE 		= #{cmd_code}
+		 ORDER BY
+		       CA.ARG_SEQUENCE
+    </select>
+	
+	<select id="listService" resultType="java.util.HashMap">
+    	/* WebCliMapper.xml listService */
+    	SELECT S.SVC_NO
+		     , S.SVC_NAME
+		  FROM TAT_SVC			S
+		 WHERE 1=1
+		   AND S.PKG_NAME		= #{pkg_name}
+		 ORDER BY
+		       S.SVC_NAME
+    </select>
+	
+	<select id="getPkgName" resultType="String">
+    	/* WebCliMapper.xml getPkgName */
+    	SELECT PKG_NAME
+		  FROM TAT_NODE
+		 WHERE 1=1
+		   AND NODE_NAME		= #{node_name}
+    </select>
+	
+	<select id="getNodeNo" resultType="String">
+    	/* WebCliMapper.xml getNodeNo */
+    	SELECT NODE_NO
+		  FROM TAT_NODE
+		 WHERE 1=1
+		   AND NODE_NAME		= #{node_name}
+    </select>
+	
+	<select id="getCmdEmsDestination" resultType="String">
+    	/* WebCliMapper.xml getCmdEmsDestination */
+    	SELECT CMD_EMS_DESTINATION
+		  FROM TAT_CMD_DEST
+		 WHERE 1=1
+		   AND PKG_NAME			= 'ATOM'
+		   AND CMD_CODE			= #{cmd_code}
+    </select>
+	
+	<select id="listProcess" resultType="java.util.HashMap">
+    	/* WebCliMapper.xml listProcess */
+    	SELECT P.PROC_NO
+		     , P.PROC_NAME
+		  FROM TAT_PROCESS	P
+		     , TAT_NODE		N
+		 WHERE 1=1
+		   AND P.PKG_NAME	= N.PKG_NAME
+		   AND P.NODE_TYPE	= N.NODE_TYPE
+		   AND N.NODE_NAME	= #{node_name}
+		   AND P.SVC_NO		= #{svc_no}
+    </select>
+</mapper>

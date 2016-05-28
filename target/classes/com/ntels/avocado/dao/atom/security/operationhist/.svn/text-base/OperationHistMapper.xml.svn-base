@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ntels.avocado.dao.atom.security.operationhist.OperationHistMapper">
+	
+	<select id="listMenu" resultType="java.util.HashMap">
+		SELECT 'all' AS ID
+        	 , 'ALL' AS NAME
+		UNION 
+		(SELECT MENU_ID   AS ID
+		      , MENU_NAME AS NAME 
+	       FROM TAT_MENU 
+	      WHERE 1=1
+	        AND DEPTH > 0
+	        AND IS_FOLDER = 'N'
+	      ORDER BY MENU_NAME, DEPTH, DISPLAY_ORDER)
+	</select>
+	
+	<select id="listTarget" resultType="java.util.HashMap">
+		SELECT 'all' AS ID
+        	 , 'ALL' AS NAME
+		UNION     
+		(SELECT DETAIL_CD   AS ID
+		      , CODE_NAME   AS NAME
+		   FROM TAT_COMMON_CODE
+		  WHERE 1=1
+		    AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.PFNM_HISTORY_LOGIN_CONSTANTS_CLIENT_TYPE"/>
+		  ORDER BY DISPLAY_ORDER)
+	</select>
+	
+	<select id="listMessage" resultType="java.util.HashMap">
+		SELECT 'all' AS ID
+        	 , 'ALL' AS NAME
+		UNION     
+		(SELECT DETAIL_CD   AS ID
+		      , CODE_NAME   AS NAME
+		   FROM TAT_COMMON_CODE
+		  WHERE 1=1
+		    AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_OPER_MESSAGE"/>
+		  ORDER BY DISPLAY_ORDER)
+	</select>
+		
+	<select id="count" resultType="int">
+		SELECT COUNT(*)
+		  FROM TAT_OPERATION_HIST A
+		     , TAT_NODE B
+		     , TAT_MENU C
+		     , TAT_USER D
+		 WHERE 1=1
+		   AND A.NODE_NO = B.NODE_NO
+		   AND A.MENU_ID = C.MENU_ID
+		   AND A.USER_ID = D.USER_ID
+		   AND D.LEVEL_ID <![CDATA[>=]]> #{condition.userLevelId}
+		   AND DATE_FORMAT(A.PRC_DATE,'%Y%m%d%H%i') <![CDATA[>=]]> CONCAT(#{condition.startDate}, #{condition.startTime})
+		   AND DATE_FORMAT(A.PRC_DATE,'%Y%m%d%H%i') <![CDATA[<]]> CONCAT(#{condition.endDate}, #{condition.endTime})
+		   <if test="condition.nodeNo != '' and condition.nodeNo != null">
+		   AND A.NODE_NO IN (${condition.nodeNo})
+		   </if>
+		   <if test="condition.menuId != 'all' and condition.menuId != '' and condition.menuId != null">
+		   AND A.MENU_ID = #{condition.menuId}
+		   </if>
+		   <if test="condition.operMessage != 'all' and condition.operMessage != '' and condition.operMessage != null">
+		   AND OPER_MESSAGE = #{condition.operMessage}
+		   </if>
+		   <if test="condition.operTarget != 'all' and condition.operTarget != '' and condition.operTarget != null">
+		   AND OPER_TARGET = #{condition.operTarget}
+		   </if>
+		   <if test="condition.userId != '' and condition.userId != null">
+		   AND A.USER_ID LIKE CONCAT('%', #{condition.userId , jdbcType=CHAR}, '%')
+		   </if>
+		   <if test="condition.operCmd != '' and condition.operCmd != null">
+		   AND OPER_CMD LIKE CONCAT('%', #{condition.operCmd , jdbcType=CHAR}, '%')
+		   </if>
+	</select>
+
+	<select id="list" resultType="com.ntels.avocado.domain.atom.security.operationhist.OperationHistDomain">
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_header" />
+			SELECT A.PKG_NAME
+			     , A.NODE_NO
+			     , B.NODE_NAME 
+			     , A.USER_ID
+			     , A.OPER_TARGET
+			     , (SELECT CODE_NAME 
+			          FROM TAT_COMMON_CODE 
+			         WHERE 1=1
+			           AND A.OPER_TARGET = DETAIL_CD 
+			           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.PFNM_HISTORY_LOGIN_CONSTANTS_CLIENT_TYPE"/>) AS OPER_TARGET_NAME
+			     , A.MENU_ID
+			     , C.MENU_NAME
+			     , (SELECT CODE_NAME 
+			          FROM TAT_COMMON_CODE 
+			         WHERE 1=1
+			           AND A.OPER_MESSAGE = DETAIL_CD
+			           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_OPER_MESSAGE"/>) AS OPER_MESSAGE
+			     , (SELECT CODE_NAME 
+			          FROM TAT_COMMON_CODE 
+			         WHERE 1=1 
+			           AND A.RESULT_YN = DETAIL_CD 
+			           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.PFNM_HISTORY_LOGIN_CONSTANTS_LOGIN_STATUS"/>) AS RESULT_YN
+			     , A.OPER_IP
+			     , CONCAT(DATE_FORMAT(A.PRC_DATE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language})) ,' ',DATE_FORMAT(A.PRC_DATE, '%H:%i:%s')) AS PRC_DATE
+			     , CONCAT(DATE_FORMAT(A.RES_DATE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language})) ,' ',DATE_FORMAT(A.RES_DATE, '%H:%i:%s')) AS RES_DATE
+			     , A.OPER_CMD
+			     , A.CMD_ARG
+			  FROM TAT_OPERATION_HIST A
+			     , TAT_NODE B
+			     , TAT_MENU C
+			     , TAT_USER D
+			 WHERE 1=1
+			   AND A.NODE_NO = B.NODE_NO
+			   AND A.MENU_ID = C.MENU_ID
+			   AND A.USER_ID = D.USER_ID
+			   AND D.LEVEL_ID <![CDATA[>=]]> #{condition.userLevelId}
+			   AND DATE_FORMAT(A.PRC_DATE,'%Y%m%d%H%i') <![CDATA[>=]]> CONCAT(#{condition.startDate}, #{condition.startTime})
+			   AND DATE_FORMAT(A.PRC_DATE,'%Y%m%d%H%i') <![CDATA[<]]> CONCAT(#{condition.endDate}, #{condition.endTime})
+			   <if test="condition.nodeNo != '' and condition.nodeNo != null">
+			   AND A.NODE_NO IN (${condition.nodeNo})
+			   </if>
+			   <if test="condition.menuId != 'all' and condition.menuId != '' and condition.menuId != null">
+			   AND A.MENU_ID = #{condition.menuId}
+			   </if>
+			   <if test="condition.operMessage != 'all' and condition.operMessage != '' and condition.operMessage != null">
+			   AND OPER_MESSAGE = #{condition.operMessage}
+			   </if>
+			   <if test="condition.operTarget != 'all' and condition.operTarget != '' and condition.operTarget != null">
+			   AND OPER_TARGET = #{condition.operTarget}
+			   </if>
+			   <if test="condition.userId != '' and condition.userId != null">
+			   AND A.USER_ID LIKE CONCAT('%', #{condition.userId , jdbcType=CHAR}, '%')
+			   </if>
+			   <if test="condition.operCmd != '' and condition.operCmd != null">
+			   AND OPER_CMD LIKE CONCAT('%', #{condition.operCmd , jdbcType=CHAR}, '%')
+			   </if>
+			 <if test="condition.orderBy != '' and condition.orderBy != null">
+			 ORDER BY ${condition.orderBy}
+			 </if>
+			 <if test="condition.orderBy == '' or condition.orderBy == null">
+			 ORDER BY OPER_TARGET DESC, MENU_NAME DESC
+			 </if>
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_footer" />
+	</select>
+
+	<select id="listExcel" resultType="java.util.LinkedHashMap">
+		SELECT A.PKG_NAME AS 'Package'
+		     , B.NODE_NAME AS 'Node Name'
+		     , A.USER_ID AS 'User ID'
+		     , (SELECT CODE_NAME 
+		          FROM TAT_COMMON_CODE 
+		         WHERE 1=1
+		           AND A.OPER_TARGET = DETAIL_CD
+		           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.PFNM_HISTORY_LOGIN_CONSTANTS_CLIENT_TYPE"/>) AS 'Target'
+		     , C.MENU_NAME AS 'Function'
+		     , (SELECT CODE_NAME 
+		          FROM TAT_COMMON_CODE 
+		         WHERE 1=1
+		           AND A.OPER_MESSAGE = DETAIL_CD
+		           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_OPER_MESSAGE"/>) AS 'Message'
+		     , IFNULL((SELECT CODE_NAME 
+		          FROM TAT_COMMON_CODE 
+		         WHERE 1=1 
+		           AND A.RESULT_YN = DETAIL_CD 
+		           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.PFNM_HISTORY_LOGIN_CONSTANTS_LOGIN_STATUS"/>),'') AS 'Result'
+		     , A.OPER_IP AS 'IP'
+		     , CONCAT(DATE_FORMAT(A.PRC_DATE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language})) ,' ',DATE_FORMAT(A.PRC_DATE, '%H:%i:%s')) AS 'Request Time'
+		     , IFNULL(CONCAT(DATE_FORMAT(A.RES_DATE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language})) ,' ',DATE_FORMAT(A.RES_DATE, '%H:%i:%s')),'') AS 'Response Time'
+		     , IFNULL(A.OPER_CMD,'') AS 'Command'
+		     , IFNULL(A.CMD_ARG,'') AS 'Additional Info'
+		  FROM TAT_OPERATION_HIST A
+		     , TAT_NODE B
+		     , TAT_MENU C
+		     , TAT_USER D
+		 WHERE 1=1
+		   AND A.NODE_NO = B.NODE_NO
+		   AND A.MENU_ID = C.MENU_ID
+		   AND A.USER_ID = D.USER_ID
+		   AND D.LEVEL_ID <![CDATA[>=]]> #{condition.userLevelId}
+		   AND DATE_FORMAT(A.PRC_DATE,'%Y%m%d%H%i') <![CDATA[>=]]> CONCAT(#{condition.startDate}, #{condition.startTime})
+		   AND DATE_FORMAT(A.PRC_DATE,'%Y%m%d%H%i') <![CDATA[<]]> CONCAT(#{condition.endDate}, #{condition.endTime})
+		   <if test="condition.nodeNo != '' and condition.nodeNo != null">
+		   AND A.NODE_NO IN (${condition.nodeNo})
+		   </if>
+		   <if test="condition.menuId != 'all' and condition.menuId != '' and condition.menuId != null">
+		   AND A.MENU_ID = #{condition.menuId}
+		   </if>
+		   <if test="condition.operMessage != 'all' and condition.operMessage != '' and condition.operMessage != null">
+		   AND OPER_MESSAGE = #{condition.operMessage}
+		   </if>
+		   <if test="condition.operTarget != 'all' and condition.operTarget != '' and condition.operTarget != null">
+		   AND OPER_TARGET = #{condition.operTarget}
+		   </if>
+		   <if test="condition.userId != '' and condition.userId != null">
+		   AND A.USER_ID LIKE CONCAT('%', #{condition.userId , jdbcType=CHAR}, '%')
+		   </if>
+		   <if test="condition.operCmd != '' and condition.operCmd != null">
+		   AND OPER_CMD LIKE CONCAT('%', #{condition.operCmd , jdbcType=CHAR}, '%')
+		   </if>
+		 <if test="condition.orderBy != '' and condition.orderBy != null">
+		 ORDER BY ${condition.orderBy}
+		 </if>
+		 <if test="condition.orderBy == '' or condition.orderBy == null">
+		 ORDER BY OPER_TARGET DESC, MENU_NAME DESC
+		 </if>
+	</select>
+</mapper>

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+ 
+ <mapper namespace="com.ntels.avocado.dao.atom.performance.calltrace.CallTraceMapper">
+ 
+ 	<insert id="insertTraceHist" parameterType="com.ntels.avocado.domain.atom.performance.calltrace.TrcHist">
+ 		<selectKey keyProperty="start_date" resultType="String" order="BEFORE">
+			SELECT DATE_FORMAT(NOW(), '%Y%m%d%H%i%s') AS START_DATE
+		</selectKey>
+ 		INSERT INTO TAT_TRC_HIST (
+ 			OPER_NO,
+			PACKAGE_NAME,
+			NODE_NAME,
+			USER_ID,
+			PROTOCOL,
+			RUN_MODE,
+			SEARCH_MODE,
+			START_DATE,
+			CMD,
+			FILE_NAME,
+			STATUS
+ 		) VALUES (
+ 			#{oper_no},
+			#{package_name},
+			#{node_name},
+			#{user_id},
+			#{protocol},
+			#{run_mode},
+			#{search_mode},
+			STR_TO_DATE(#{start_date}, '%Y%m%d%H%i%s'),
+			#{cmd},
+			#{file_name},
+			#{status}
+ 		)
+ 	</insert>
+ 	
+ 	<insert id="updateTraceHist" parameterType="com.ntels.avocado.domain.atom.performance.calltrace.TrcHist">
+ 		<selectKey keyProperty="end_date" resultType="String" order="BEFORE">
+			SELECT DATE_FORMAT(NOW(), '%Y%m%d%H%i%s') AS END_DATE
+		</selectKey>
+ 		UPDATE TAT_TRC_HIST SET
+ 			END_DATE = STR_TO_DATE(#{end_date}, '%Y%m%d%H%i%s')
+ 		WHERE
+ 			PACKAGE_NAME = #{package_name}
+ 			AND OPER_NO = #{oper_no}
+ 	</insert>
+ 	
+ 	<select id="getDateText" parameterType="Map" resultType="String">
+ 		SELECT DATE_FORMAT(STR_TO_DATE(#{date}, '%Y%m%d%H%i%s'), (SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{language}))
+ 	</select>
+ 	
+ 	<select id="getTraceHist" parameterType="com.ntels.avocado.domain.atom.performance.calltrace.TrcHist" resultType="com.ntels.avocado.domain.atom.performance.calltrace.TrcHist">
+ 		SELECT OPER_NO,
+			PACKAGE_NAME,
+			NODE_NAME,
+			USER_ID,
+			PROTOCOL,
+			RUN_MODE,
+			SEARCH_MODE,
+			DATE_FORMAT(START_DATE, '%Y%m%d%H%i%s') AS START_DATE,
+			CMD,
+			FILE_NAME,
+			STATUS
+		FROM TAT_TRC_HIST
+		WHERE USER_ID = #{user_id}
+			AND STATUS &lt;&gt; '3'
+		ORDER BY START_DATE DESC
+		LIMIT 1
+ 	</select>
+ 
+ </mapper>
+ 

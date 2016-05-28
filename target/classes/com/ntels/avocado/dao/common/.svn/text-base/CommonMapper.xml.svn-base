@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ntels.avocado.dao.common.CommonMapper">
+
+    <sql databaseId="oracle" id="paging_header">
+		SELECT *
+		    FROM (SELECT originalQuery.*
+		               , ROWNUM AS RNUM
+			          FROM (
+	</sql>
+
+	<sql databaseId="oracle" id="paging_footer">
+		   ) originalQuery		
+		<if test="end > 0">
+		   WHERE ROWNUM <![CDATA[<=]]> (#{end}+#{start})
+		</if>
+		) WHERE RNUM > #{start}
+	</sql>
+	
+	<sql databaseId="mysql" id="paging_header">
+		SELECT * 
+		    FROM(SELECT @rownum := @rownum + 1 AS rownum
+		              , listA.*
+			         FROM (SELECT @rownum := 0) r, (
+	</sql>
+	
+	<sql databaseId="mysql" id="paging_footer">
+				     ) listA
+			   ) listB
+		   WHERE 
+		<![CDATA[  
+				listB.rownum <= (#{end}+#{start})
+			AND listB.rownum > #{start}
+	    ]]>
+	</sql>
+
+    <!-- 
+    	** 언어 패턴 조회
+    	-->
+	<select id="findLocalePattern" parameterType="string" resultType="hashmap">
+		SELECT PATTERN_DATE
+		     , PATTERN_TIME
+		     , PATTERN_MONTH 
+		    FROM TAT_DATE_PATTERN 
+		   WHERE LOCALE = #{locale}
+	</select>
+	
+	<!-- 
+    	** 매뉴명 조회
+    	-->
+	<select id="findMenuName" parameterType="string" resultType="hashmap">
+		SELECT B.MENU_ID
+		     , B.MENU_NAME
+		     , A.AUTH_TYPE 
+		     FROM (SELECT B.LEVEL_ID
+		                , B.MENU_ID
+		                , B.AUTH_TYPE 
+		                FROM (SELECT A.LEVEL_ID 
+		                           FROM (SELECT LEVEL_ID 
+		                                      FROM TAT_USER 
+		                                     WHERE USER_ID = #{userId}
+		                                 )A
+		                               , TAT_USER_LEVEL B 
+		                          WHERE A.LEVEL_ID = B.LEVEL_ID
+		                     )A
+		                   , TAT_USER_AUTH B
+                       WHERE A.LEVEL_ID = B.LEVEL_ID
+                  )A
+               , (SELECT MENU_ID
+		               , MENU_NAME 
+		               FROM TAT_MENU 
+		              WHERE BINARY(MENU_PATH) = #{url} 
+		               AND IS_FOLDER = 'N'
+		          ) B 
+		   WHERE A.MENU_ID = B.MENU_ID
+
+	</select>
+	
+	<!-- 
+    	** Recent 최근의 메뉴 입력
+    	-->
+	<insert id="addRecent" parameterType="hashmap">
+		INSERT INTO TAT_RECENT (
+			MENU_ID
+		  , USER_ID
+		  , CREATE_TIME
+		) VALUES (
+			#{menuId}
+		  , #{userId}
+		  , NOW()
+		)
+	</insert>
+	
+	<!-- 
+    	** Recent 최근의 메뉴 삭제
+    	-->
+	<delete id="removeRecent" parameterType="hashmap">
+		DELETE 
+		    FROM TAT_RECENT
+		   WHERE USER_ID = #{userId}
+		   	 <if test="menuId != null and menuId != ''">
+		     	AND MENU_ID = #{menuId}
+		     </if>		    
+    </delete>
+    
+    <!-- 
+    	** Recent 최근의 메뉴 조회
+    	--> 
+	<select id="findRecent" parameterType="string" resultType="hashmap">
+		SELECT A.MENU_NAME
+		     , A.MENU_PATH 
+		     , B.MENU_ID
+		    FROM TAT_MENU A
+		       , TAT_RECENT B 
+		   WHERE A.MENU_ID = B.MENU_ID 
+		     AND B.USER_ID = #{userId}
+		     AND A.POPUP_YN = 'N'
+		  ORDER BY CREATE_TIME DESC
+		  LIMIT 5   
+	</select>
+	
+	<!-- 
+    	** 트리 패키지 조회
+    	--> 
+	<select id="listTreePackage" resultType="hashmap">
+		SELECT PKG_NAME AS id
+		     , PKG_NAME AS text
+		     , '/images/tree_icon/images/pkg_unknown.png' AS icon 
+		     FROM TAT_PKG	
+	</select>
+	
+	<!-- 
+    	** 트리 노드 조회
+    	-->
+	<select id="listTreeNode" parameterType="string" resultType="hashmap">
+        SELECT CONCAT(PKG_NAME,'-',NODE_NO) AS id
+             , NODE_NAME AS text  
+             , '/images/tree_icon/images/node_unknown.png' AS icon
+             FROM TAT_NODE A 
+            WHERE USE_YN = 'Y'	
+              AND PKG_NAME = #{packageName}
+	</select>
+	
+	<!-- 
+		* 이력 입력
+		 -->
+	<insert id="insertOperationHist" parameterType="com.ntels.avocado.domain.atom.security.operationhist.OperationHistDomain" useGeneratedKeys="true" keyProperty="oper_id">
+		INSERT INTO TAT_OPERATION_HIST
+		( 	PKG_NAME
+		  , NODE_NO
+		  , USER_ID
+		  , PRC_DATE
+		  , OPER_TARGET
+		  , MENU_ID
+		  , OPER_IP
+		  , OPER_MESSAGE
+		  , OPER_CMD
+		  , CMD_ARG
+		  , RES_DATE
+		  , RESULT_YN
+		  , FAIL_REASON
+		) VALUES (
+		    'ATOM'
+		  ,	(SELECT NODE_NO FROM TAT_NODE WHERE 1=1 AND PKG_NAME = 'ATOM' AND NODE_TYPE ='EMS' LIMIT 1)
+          , #{user_id}
+          , NOW()
+          , 0
+          , #{menu_id}
+          , #{oper_ip}
+          , #{oper_message}
+          , #{oper_cmd}
+          , #{cmd_arg}
+          , STR_TO_DATE(#{res_date},'%Y-%m-%d %H:%i:%s')
+          , #{result_yn}
+          , #{fail_reason}
+       )
+
+	</insert>
+	
+	<!-- 
+		* 이력 수정
+		 -->
+	<update id="updateOperationHist" parameterType="com.ntels.avocado.domain.atom.security.operationhist.OperationHistDomain">
+		UPDATE TAT_OPERATION_HIST SET
+		    OPER_MESSAGE = #{oper_message}
+		  , OPER_CMD = #{oper_cmd}
+		  , CMD_ARG = #{cmd_arg}
+		  , RES_DATE = STR_TO_DATE(#{res_date},'%Y-%m-%d %H:%i:%s')
+		  , RESULT_YN = #{result_yn}
+		  , FAIL_REASON = #{fail_reason}
+		WHERE OPER_NO = #{oper_id}
+			
+	</update>
+</mapper>

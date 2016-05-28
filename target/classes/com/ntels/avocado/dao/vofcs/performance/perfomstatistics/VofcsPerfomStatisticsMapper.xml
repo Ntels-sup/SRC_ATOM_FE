@@ -1,0 +1,363 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+ 
+ <mapper namespace="com.ntels.avocado.dao.vofcs.performance.perfomstatistics.VofcsPerfomStatisticsMapper">
+  <!-- * 리스트 조회 -->
+     <select id="list" databaseId="mysql"
+                      resultType="java.util.LinkedHashMap">
+            	        
+			    SELECT  
+					 <if test="condition.typeId == 1 || condition.typeId == 5 || condition.typeId == 6 ">
+				       DATE_FORMAT(PRC_DATE,CONCAT(#{condition.locale},' %H:%i' )) AS PRC_DATE 
+				     </if>
+				     <if test="condition.typeId == 2">
+				       DATE_FORMAT(PRC_DATE,CONCAT(#{condition.locale},' %H' )) AS PRC_DATE 
+				     </if>
+				     <if test="condition.typeId == 3">
+				       DATE_FORMAT(PRC_DATE, #{condition.locale} ) AS PRC_DATE 
+				     </if>
+				     <if test="condition.typeId == 4">
+				       DATE_FORMAT(CONCAT(PRC_DATE,'-01'), #{condition.locale}) AS PRC_DATE 
+				     </if>
+			           ,NODE_NAME AS SYSTEM
+			         <foreach   collection="condition.viewColumns" item ="viewColumn" index="index"   open="" separator="" close="" >
+						<if test="viewColumn != '' and viewColumn != null">
+						, ${viewColumn}
+			  		    </if>
+			  		 </foreach>
+			         <foreach   collection="condition.sumColumns" item ="sumColumn" index="index"   open="" separator="" close="" >
+			         	<if test="sumColumn != '' and sumColumn != null">
+				 		, ${sumColumn}
+				 		</if>
+			  		 </foreach>
+			    FROM (       
+					    <include refid="com.ntels.avocado.dao.common.CommonMapper.paging_header" />
+					    <include refid="listClause"/>                                    
+						<if test="condition.orderBy != '' and condition.orderBy != null">
+						ORDER BY ${condition.orderBy}
+						</if>
+						<if test="condition.orderBy == '' or condition.orderBy == null">
+						ORDER BY PRC_DATE , NODE_NAME ASC
+						</if>
+					    <include refid="com.ntels.avocado.dao.common.CommonMapper.paging_footer" />
+			         )RerFormList
+     </select>
+ 
+
+ 
+ 
+     <!-- * 리스트 Count -->
+    <select id="count" databaseId="mysql"  
+                       resultType="java.util.HashMap">
+        SELECT
+               COUNT(*) AS TOTAL_COUNT 
+        FROM 
+        (
+			<include refid="listClause"/>
+        ) Z
+    </select>
+     
+    <!--   top10 시스템 조회  -->
+    
+    <select id="topSystemArray" databaseId="mysql"
+                              resultType="String">
+		SELECT GROUP_CONCAT(NODE_NAME)
+		FROM(
+		SELECT  
+		        NODE_NAME 
+		      , ${condition.topCountColumn}
+	     FROM
+		( 
+		    <include refid="listClause"/>                              
+		 ) RscList
+		                     GROUP BY NODE_NAME 
+		                     ORDER BY RscList.${condition.topCountColumn} DESC , NODE_NAME ASC
+		                     LIMIT ${condition.limitTable}                       
+          )SYS
+    </select>
+ 
+
+
+
+    <!-- * Chart 조회 -->
+    <select id="getChartList" databaseId="mysql"
+                              resultType="java.util.HashMap">
+		SELECT 
+			 <if test="condition.typeId == 1 || condition.typeId == 5 || condition.typeId == 6 ">
+		       DATE_FORMAT(PRC_DATE,CONCAT(#{condition.locale},' %H:%i' )) AS PRC_DATE 
+		     </if>
+		     <if test="condition.typeId == 2">
+		       DATE_FORMAT(PRC_DATE,CONCAT(#{condition.locale},' %H' )) AS PRC_DATE 
+		     </if>
+		     <if test="condition.typeId == 3">
+		       DATE_FORMAT(PRC_DATE, #{condition.locale} ) AS PRC_DATE 
+		     </if>
+		     <if test="condition.typeId == 4">
+		       DATE_FORMAT(CONCAT(PRC_DATE,'-01'), #{condition.locale}) AS PRC_DATE 
+		     </if>
+		     , GROUP_CONCAT( <foreach   collection="condition.chartColumns" item ="chartColumn" index="index"   open="" separator=",','," close="" >
+				               NODE_NAME,':','${chartColumn}','~',${chartColumn}    
+			                  </foreach>
+			                ) AS CNT
+        FROM 
+        (
+			<include refid="listClause"/>
+		) RscList
+		GROUP BY PRC_DATE
+    </select>
+
+
+ 	<!-- * 엑셀 조회 -->
+    <select id="listExcel"    resultType="java.util.LinkedHashMap">
+			    SELECT  
+					 <if test="condition.typeId == 1 || condition.typeId == 5 || condition.typeId == 6 ">
+				       DATE_FORMAT(PRC_DATE,CONCAT(#{condition.locale},' %H:%i' )) AS PRC_DATE 
+				     </if>
+				     <if test="condition.typeId == 2">
+				       DATE_FORMAT(PRC_DATE,CONCAT(#{condition.locale},' %H' )) AS PRC_DATE 
+				     </if>
+				     <if test="condition.typeId == 3">
+				       DATE_FORMAT(PRC_DATE, #{condition.locale} ) AS PRC_DATE 
+				     </if>
+				     <if test="condition.typeId == 4">
+				       DATE_FORMAT(CONCAT(PRC_DATE,'-01'), #{condition.locale}) AS PRC_DATE 
+				     </if>
+			           ,NODE_NAME AS SYSTEM
+			         <foreach   collection="condition.viewColumns" item ="viewColumn" index="index"   open="" separator="" close="" >
+						<if test="viewColumn != '' and viewColumn != null">
+						, ${viewColumn}
+			  		    </if>
+			  		 </foreach>
+			         <foreach   collection="condition.sumColumns" item ="sumColumn" index="index"   open="" separator="" close="" >
+			         	<if test="sumColumn != '' and sumColumn != null">
+				 		, ${sumColumn}
+				 		</if>
+			  		 </foreach>
+			    FROM ( 
+		  	            <include refid="listClause"/>                                    
+						<if test="condition.orderBy != '' and condition.orderBy != null">
+						ORDER BY ${condition.orderBy}
+						</if>
+						<if test="condition.orderBy == '' or condition.orderBy == null">
+						ORDER BY PRC_DATE , NODE_NAME ASC
+						</if>
+			         )RerFormList
+    </select>
+
+
+     <sql id="listClause">
+		SELECT PRC_DATE,NODE_NAME
+	          <foreach   collection="condition.viewColumns" item ="viewColumn" index="index"   open="" separator="" close="" >
+				<if test="viewColumn != '' and viewColumn != null">
+				, ${viewColumn}
+	  		    </if>
+	  		  </foreach>
+	          <foreach   collection="condition.sumColumns" item ="sumColumn" index="index"   open="" separator="" close="" >
+	         	 <if test="sumColumn != '' and sumColumn != null">
+		 		 , SUM(${sumColumn}) AS ${sumColumn}
+		 		 </if>
+	  		  </foreach>
+		FROM ( SELECT FLIST.*
+				 FROM
+				(SELECT A_PRC_DATE AS PRC_DATE
+				      <if test="condition.system_name == 'all'">
+		     	       ,'ALL' AS NODE_NAME
+					  </if>
+					  <if test="condition.system_name != 'all'">
+					   ,NODE_NAME
+					  </if> 		
+	  		          <foreach   collection="condition.viewColumns" item ="viewColumn" index="index"   open="" separator="" close="" >
+						<if test="viewColumn != '' and viewColumn != null">
+						, ${viewColumn}
+			  		    </if>
+				  	  </foreach>
+			          <foreach   collection="condition.sumColumns" item ="sumColumn" index="index"   open="" separator="" close="" >
+			         	 <if test="sumColumn != '' and sumColumn != null">
+				 		 , SUM(${sumColumn}) AS ${sumColumn}
+				 		 </if>
+			  		  </foreach>
+				FROM (SELECT (<include refid="typeIdCondition"/>) AS A_PRC_DATE 
+						      ,NODE_NAME
+			  		          <foreach   collection="condition.viewColumns" item ="viewColumn" index="index"   open="" separator="" close="" >
+								<if test="viewColumn != '' and viewColumn != null">
+								, ${viewColumn}
+					  		    </if>
+						  	  </foreach>
+					          <foreach   collection="condition.sumColumns" item ="sumColumn" index="index"   open="" separator="" close="" >
+					         	 <if test="sumColumn != '' and sumColumn != null">
+						 		 , SUM(${sumColumn}) AS ${sumColumn}
+						 		 </if>
+					  		  </foreach>
+					    FROM ${condition.tableName} 
+				      WHERE 1=1
+			 	          <if test="condition.system_name != 'all'">
+				            AND NODE_NAME IN
+								<foreach   collection="condition.systemArray" item ="systemArray" index="index"   open="(" separator="," close=")" >
+									 #{systemArray}
+								</foreach>
+				          </if>
+				          <include refid="whereTimeClause"/>
+				          <if test="condition.whereClause != '' and  condition.whereClause != null">
+				          		${condition.whereClause}
+				          </if>
+				      	GROUP BY A_PRC_DATE ,NODE_NAME
+				      )TB 
+				GROUP BY A_PRC_DATE ,NODE_NAME
+				)FLIST
+				UNION
+				SELECT  PRC_DATE 
+				      <if test="condition.system_name == 'all'">
+		     	       ,'ALL' AS NODE_NAME
+					  </if>
+					  <if test="condition.system_name != 'all'">
+					   ,NODE_NAME
+					  </if> 
+	  		          <foreach   collection="condition.viewColumns" item ="viewColumn" index="index"   open="" separator="" close="" >
+						<if test="viewColumn != '' and viewColumn != null">
+						, ${viewColumn}
+			  		    </if>
+				  	  </foreach>
+		 			  <foreach   collection="condition.sumColumns" item ="sumColumn" index="index"   open="" separator="" close="" >
+		 			  	<if test="sumColumn != '' and sumColumn != null">
+						, 0 AS ${sumColumn}
+						</if>
+					  </foreach>
+			      FROM (<include refid="datetimeFromClause"/>) A 
+		
+				 	    <if test="condition.system_name != 'all'">
+					        ,( SELECT NODE_NAME FROM  
+								<foreach   collection="condition.systemArray" item ="systemArray" index="indexNO"   open="(" separator="UNION" close=") NODE" >
+								  SELECT #{systemArray}  AS NODE_NAME
+								</foreach>
+								)B
+						</if>
+				       <if test="condition.timeUnionClause != '' and  condition.timeUnionClause != null">
+		                    ${condition.timeUnionClause}
+		               </if>
+		           ) LIST
+          GROUP BY PRC_DATE,NODE_NAME
+ 		          <foreach   collection="condition.viewColumns" item ="viewColumn" index="index"   open="" separator="" close="" >
+			    	<if test="viewColumn != '' and viewColumn != null">
+				    , ${viewColumn}
+	  		        </if>
+		  	      </foreach>
+    </sql>
+    
+  
+    <sql id="whereTimeClause">
+		<choose>
+			<when test="condition.typeId != null and condition.typeId != '' and condition.typeId != 'all'">
+				<if test="condition.typeId == 1 || condition.typeId == 5 || condition.typeId == 6 "> <!-- 5, 10, 30 cycle -->
+					AND DATE_FORMAT(PRC_DATE,'%Y%m%d%H%i') <![CDATA[>=]]> CONCAT(#{condition.startDate}, #{condition.startTime})
+		            AND DATE_FORMAT(PRC_DATE,'%Y%m%d%H%i') <![CDATA[<]]> CONCAT(#{condition.endDate}, #{condition.endTime})
+		        </if>
+		        <if test="condition.typeId == 2"> <!-- 시간별 -->
+		        	AND DATE_FORMAT(PRC_DATE,'%Y%m%d%H') <![CDATA[>=]]> SUBSTR(CONCAT(#{condition.startDate},#{condition.startTime}), 1, 10)
+		            AND DATE_FORMAT(PRC_DATE,'%Y%m%d%H') <![CDATA[<]]>  SUBSTR(CONCAT(#{condition.endDate},#{condition.endTime}), 1, 10)
+		        </if>
+		        <if test="condition.typeId == 3"><!--  일별 -->
+		        	AND DATE_FORMAT(PRC_DATE,'%Y%m%d') <![CDATA[>=]]> #{condition.startDate}
+		            AND DATE_FORMAT(PRC_DATE,'%Y%m%d') <![CDATA[<=]]> #{condition.endDate}
+		        </if>
+		        <if test="condition.typeId == 4"> <!-- 월별 -->
+		        	AND DATE_FORMAT(PRC_DATE,'%Y%m') <![CDATA[>=]]> SUBSTR(#{condition.startDate}, 1, 6)
+		            AND DATE_FORMAT(PRC_DATE,'%Y%m') <![CDATA[<=]]> SUBSTR(#{condition.endDate}, 1, 6)
+		        </if>
+		    </when>
+		    <otherwise><!-- 전체 -->
+					AND DATE_FORMAT(PRC_DATE,'%Y%m%d%H%i') <![CDATA[>=]]> CONCAT(#{condition.startDate}, #{condition.startTime})
+		            AND DATE_FORMAT(PRC_DATE,'%Y%m%d%H%i') <![CDATA[<]]> CONCAT(#{condition.endDate}, #{condition.endTime})
+		    </otherwise>
+		</choose>
+    </sql>
+  
+  
+  
+  
+    
+    <!--datetimeFromClause -->
+	<sql id="datetimeFromClause">
+		<choose>
+			<when test="condition.typeId != null and condition.typeId != '' and condition.typeId != 'all'">
+				<if test="condition.typeId == 1 || condition.typeId == 5 || condition.typeId == 6 "> <!-- 5, 10, 30 cycle -->
+					SELECT @R:=@R+1 AS ROWNUM, 
+					       DATE_FORMAT(DATE_ADD(STR_TO_DATE(CONCAT(#{condition.startDate},#{condition.startTime}), '%Y%m%d%H%i'), INTERVAL + (@R-1) * <if test="condition.typeId == 1">5</if><if test="condition.typeId == 5">10</if><if test="condition.typeId == 6">30</if> MINUTE), '%Y-%m-%d %H:%i') AS PRC_DATE
+					FROM  TAT_SEQ S,
+					(SELECT @R:=0) AS R
+					WHERE @R <![CDATA[<]]> TIMESTAMPDIFF(MINUTE, STR_TO_DATE(CONCAT(#{condition.startDate},#{condition.startTime}), '%Y%m%d%H%i'), STR_TO_DATE(CONCAT(#{condition.endDate},#{condition.endTime}), '%Y%m%d%H%i')) 
+					                        / <if test="condition.typeId == 1">5</if><if test="condition.typeId == 5">10</if><if test="condition.typeId == 6">30</if>
+		        </if>
+		        <if test="condition.typeId == 2"> <!-- 시간별 -->
+					SELECT @R:=@R+1 AS ROWNUM, 
+					       DATE_FORMAT(DATE_ADD(STR_TO_DATE(SUBSTR(CONCAT(#{condition.startDate},#{condition.startTime}), 1, 10), '%Y%m%d%H'), INTERVAL + (@R-1) HOUR), '%Y-%m-%d %H') AS PRC_DATE
+					FROM  TAT_SEQ S,
+					(SELECT @R:=0) AS R
+					WHERE @R <![CDATA[<]]> TIMESTAMPDIFF(HOUR, STR_TO_DATE(CONCAT(#{condition.startDate},#{condition.startTime}), '%Y%m%d%H%i'), STR_TO_DATE(CONCAT(#{condition.endDate},#{condition.endTime}), '%Y%m%d%H%i'))
+		        </if>
+		        <if test="condition.typeId == 3"><!--  일별 -->
+					SELECT @R:=@R+1 AS ROWNUM, 
+					       DATE_FORMAT(DATE_ADD(STR_TO_DATE(#{condition.startDate}, '%Y%m%d'), INTERVAL + (@R-1) DAY), '%Y-%m-%d') AS PRC_DATE
+					FROM  TAT_SEQ S,
+					(SELECT @R:=0) AS R
+					WHERE @R <![CDATA[<=]]> TIMESTAMPDIFF(DAY, STR_TO_DATE(CONCAT(#{condition.startDate},#{condition.startTime}), '%Y%m%d%H%i'), STR_TO_DATE(CONCAT(#{condition.endDate},#{condition.endTime}), '%Y%m%d%H%i'))
+		        </if>
+		        <if test="condition.typeId == 4"> <!-- 월별 -->
+					SELECT @R:=@R+1 AS ROWNUM, 
+					       DATE_FORMAT(DATE_ADD(STR_TO_DATE(CONCAT(SUBSTR(#{condition.startDate},1,6),'01'), '%Y%m%d'), INTERVAL + (@R-1) MONTH), '%Y-%m') AS PRC_DATE
+					FROM  TAT_SEQ S,
+					(SELECT @R:=0) AS R
+					WHERE @R <![CDATA[<=]]> TIMESTAMPDIFF(MONTH, STR_TO_DATE(CONCAT(#{condition.startDate},#{condition.startTime}), '%Y%m%d%H%i'), STR_TO_DATE(CONCAT(#{condition.endDate},#{condition.endTime}), '%Y%m%d%H%i'))
+		        </if>
+		    </when>
+		    <otherwise><!-- 전체 -->
+					SELECT @R:=@R+1 AS ROWNUM, 
+					       DATE_FORMAT(DATE_ADD(STR_TO_DATE(CONCAT(#{condition.startDate},#{condition.startTime}), '%Y%m%d%H%i'), INTERVAL + (@R-1) * 5 MINUTE), '%Y-%m-%d %H:%i') AS PRC_DATE
+					FROM  TAT_SEQ S,
+					(SELECT @R:=0) AS R
+					WHERE @R <![CDATA[<]]> TIMESTAMPDIFF(MINUTE, STR_TO_DATE(CONCAT(#{condition.startDate},#{condition.startTime}), '%Y%m%d%H%i'), STR_TO_DATE(CONCAT(#{condition.endDate},#{condition.endTime}), '%Y%m%d%H%i')) / 5
+		    </otherwise>
+		</choose>	
+	</sql>
+    
+    <!--Statistics 조회 주기 조건절 -->
+	<sql id="typeIdCondition">
+		<choose>
+			<when test="condition.typeId != null and condition.typeId != '' and condition.typeId != 'all'">
+			 	<if test="condition.typeId == 1"> <!-- 5분주기 -->
+				    CONCAT(DATE_FORMAT(PRC_DATE,'%Y-%m-%d'),' ',DATE_FORMAT(PRC_DATE ,'%H'),':',
+						CASE FLOOR(SUBSTRING(DATE_FORMAT(PRC_DATE ,'%H%i'), 3, 2) / 5) WHEN 0  THEN '00' WHEN 1  THEN '05' WHEN 2  THEN '10' WHEN 3  THEN '15' WHEN 4  THEN '20'
+															      WHEN 5  THEN '25' WHEN 6  THEN '30' WHEN 7  THEN '35' WHEN 8  THEN '40' WHEN 9  THEN '45'
+																  WHEN 10 THEN '50' ELSE '55' END)
+			 	</if>
+			 	<if test="condition.typeId == 5"> <!-- 10분주기 -->
+					CONCAT(DATE_FORMAT(PRC_DATE,'%Y-%m-%d'),' ',DATE_FORMAT(PRC_DATE ,'%H'),':',
+						CASE FLOOR(SUBSTRING(DATE_FORMAT(PRC_DATE ,'%H%i'), 3, 2) / 10) WHEN 0  THEN '00' WHEN 1  THEN '10' WHEN 2  THEN '20' WHEN 3  THEN '30'
+		                                                           WHEN 4  THEN '40' ELSE '50' END)
+		        </if>
+		        <if test="condition.typeId == 6"> <!-- 30분주기 -->
+		        	CONCAT(DATE_FORMAT(PRC_DATE,'%Y-%m-%d'),' ',DATE_FORMAT(PRC_DATE ,'%H'),':',
+						CASE FLOOR(SUBSTRING(DATE_FORMAT(PRC_DATE ,'%H%i'), 3, 2) / 30) WHEN 0  THEN '00' ELSE '30' END)
+		        </if>  
+			 	<if test="condition.typeId == 2"> <!-- 시간대별 -->
+			     	CONCAT(DATE_FORMAT(PRC_DATE,'%Y-%m-%d'),' ',DATE_FORMAT(PRC_DATE ,'%H'))
+			 	</if>
+			 	<if test="condition.typeId == 3"> <!-- 일별 -->
+			     	DATE_FORMAT(PRC_DATE,'%Y-%m-%d')
+			 	</if>
+			 	<if test="condition.typeId == 4"> <!-- 월별 -->
+			     	DATE_FORMAT(PRC_DATE,'%Y-%m')
+			 	</if>
+			</when>
+		    <otherwise>
+				    CONCAT(DATE_FORMAT(PRC_DATE,'%Y-%m-%d'), ' ', DATE_FORMAT(PRC_DATE ,'%H'), ':', 
+				    	CASE FLOOR(SUBSTRING(DATE_FORMAT(PRC_DATE ,'%H%i'), 3, 2) / 5) WHEN 0  THEN '00' WHEN 1  THEN '05' WHEN 2  THEN '10' WHEN 3  THEN '15' WHEN 4  THEN '20'
+															      WHEN 5  THEN '25' WHEN 6  THEN '30' WHEN 7  THEN '35' WHEN 8  THEN '40' WHEN 9  THEN '45'
+																  WHEN 10 THEN '50' ELSE '55' END)
+		    </otherwise>
+	   </choose>
+	</sql>
+    
+ 
+ </mapper>

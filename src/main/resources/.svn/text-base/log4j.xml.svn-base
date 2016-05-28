@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">  
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">  
+    <!-- 콘솔 로그 -->  
+    <appender name="stdout" class="org.apache.log4j.ConsoleAppender">  
+        <!-- 패턴 레이아웃 설정.. -->  
+        <layout class="org.apache.log4j.PatternLayout">  
+            <param name="ConversionPattern" value="[%d{yyyy-MM-dd HH:mm:ss}] *%-5p* %c{1} - %m%n"/>         
+        </layout>  
+    </appender>  
+ 	
+ 	<logger name="org.springframework">
+ 		<level value="error"/>
+ 	</logger>
+ 	<logger name="com.ntels.avocado.dao">
+        <level value="error"/>
+    </logger>
+    <logger name="org.apache.commons">
+        <level value="error"/>
+    </logger>
+    <!-- <logger name="org.apache.jasper">
+        <level value="fine"/>
+    </logger> -->
+    
+    
+    <logger name="com.ntels.avocado.controller">
+        <level value="error"/>
+    </logger>
+    <logger name="com.ntels.avocado.service">
+        <level value="error"/>
+    </logger>
+    <logger name="com.ntels.avocado.interceptor">
+        <level value="error"/>
+    </logger>
+    
+    <logger name="jdbc.audit" additivity="false">
+         <level value="error"/>  
+    </logger>
+    
+    <logger name="jdbc.resultset" additivity="false">
+         <level value="error"/>  
+    </logger>
+    
+    <logger name="jdbc.connection" additivity="false">
+         <level value="error"/>  
+    </logger>
+    
+    
+        
+    <!-- root 로거 기본 설정 -->
+    <root>  
+        <priority value="info" />
+        <appender-ref ref="stdout" />
+    </root>  
+</log4j:configuration>  

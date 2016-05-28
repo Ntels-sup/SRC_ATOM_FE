@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ntels.avocado.dao.atom.security.menu.MenuMapper">
+
+    
+    <!-- 
+    	** 모든 메뉴 조회
+    	-->
+	<select id="listAllMenu" parameterType="string" resultType="hashmap">
+		SELECT * FROM TAT_MENU
+	</select>
+	
+	<!-- 
+    	** 권한별 매뉴 조회
+    	-->
+	<select id="listAuthorizationMenu" parameterType="string" resultType="hashmap">
+		SELECT *
+             , CASE DEPTH WHEN 3 THEN (SELECT DISPLAY_ORDER * 1000 FROM TAT_MENU WHERE MENU_ID = TBL.TEMP_VALUE) + (SELECT DISPLAY_ORDER FROM TAT_MENU WHERE MENU_ID = TBL.TEMP_VALUE2) ELSE TEMP_VALUE  END AS VIRTUAL_ORDER
+             FROM  (SELECT A.MENU_ID
+                         , A.UP_MENU_ID
+                         , A.MENU_NAME
+                         , A.MENU_PATH
+                         , A.IS_FOLDER
+                         , A.DEPTH
+                         , A.POPUP_YN
+                         , A.DISPLAY_ORDER
+                         , IFNULL(B.CNT, 0) AS CHILD_CNT 
+                         , CASE A.DEPTH WHEN 1 THEN A.DISPLAY_ORDER*1000 WHEN 2 THEN (SELECT DISPLAY_ORDER * 1000 FROM TAT_MENU WHERE MENU_ID = A.UP_MENU_ID) + A.DISPLAY_ORDER ELSE (SELECT UP_MENU_ID FROM TAT_MENU WHERE MENU_ID = A.UP_MENU_ID) END AS TEMP_VALUE
+		                 , CASE A.DEPTH WHEN 1 THEN A.DISPLAY_ORDER*1000 WHEN 2 THEN (SELECT DISPLAY_ORDER * 1000 FROM TAT_MENU WHERE MENU_ID = A.UP_MENU_ID) + A.DISPLAY_ORDER ELSE (SELECT MENU_ID FROM TAT_MENU WHERE MENU_ID = A.UP_MENU_ID) END AS TEMP_VALUE2
+                         FROM (SELECT A.MENU_ID
+                                    , B.UP_MENU_ID
+                                    , A.MENU_NAME
+                                    , A.MENU_PATH
+                                    , A.IS_FOLDER
+                                    , B.DEPTH
+                                    , A.POPUP_YN
+                                    , B.DISPLAY_ORDER
+                                   FROM (SELECT MENU_ID
+                                              , MENU_NAME
+                                              , MENU_PATH
+                                              , IS_FOLDER
+                                              , POPUP_YN
+                                              FROM (SELECT PKG_NAME FROM TAT_PKG WHERE EMS_YN = 'Y') A
+                                                  , TAT_MENU B 
+                                             WHERE A.PKG_NAME = B.PKG_NAME
+                                        ) A
+                                     , (SELECT * FROM TAT_USER_AUTH WHERE LEVEL_ID = #{userLevel}) B 
+                                 WHERE A.MENU_ID = B.MENU_ID
+                            ) A                
+                            LEFT OUTER JOIN 
+                            (SELECT UP_MENU_ID
+                                  , COUNT(*) AS CNT 
+                                  FROM TAT_USER_AUTH 
+                                 WHERE LEVEL_ID = #{userLevel}
+                                   AND UP_MENU_ID > 0 
+                                GROUP BY UP_MENU_ID
+                            ) B
+                            ON A.MENU_ID = B.UP_MENU_ID
+             ) TBL 
+           ORDER BY VIRTUAL_ORDER, DEPTH, DISPLAY_ORDER
+           
+	</select>
+	
+	<select id="listAuthorizatioPackage" parameterType="string" resultType="hashmap">
+		SELECT PKG_NAME 
+		     FROM  TAT_USER A
+                , (SELECT * FROM TAT_USER_GROUP_PKG WHERE PKG_NAME IN (SELECT PKG_NAME FROM TAT_PKG WHERE EMS_YN != 'Y')) B
+            WHERE A.GROUP_NO = B.GROUP_NO 
+              AND A.USER_ID = #{userId}
+	</select>
+	
+	<select id="listPackageMenu" parameterType="string" resultType="hashmap">
+	 SELECT 0 AS MENU_ID
+             , 0 AS UP_MENU_ID
+             , #{pkgName} AS MENU_NAME
+             , '' AS MENU_PATH 
+             , 'Y' AS  IS_FOLDER
+             , 0 AS DEPTH
+             , 'N' AS POPUP_YN
+             , 1 AS DISPLAY_ORDER
+             , (SELECT COUNT(*) FROM TAT_MENU WHERE PKG_NAME = #{pkgName} AND UP_MENU_ID = 0) AS CHILD_CNT 
+             , 0 AS VIRTUAL_ORDER
+       UNION 
+       SELECT  A.MENU_ID
+             , A.UP_MENU_ID
+             , A.MENU_NAME
+             , A.MENU_PATH
+             , A.IS_FOLDER
+             , A.DEPTH
+             , A.POPUP_YN
+             , A.DISPLAY_ORDER
+             , IFNULL(B.CNT, 0) AS CHILD_CNT 
+             , CASE A.DEPTH WHEN 1 THEN A.DISPLAY_ORDER*1000 ELSE (SELECT DISPLAY_ORDER * 1000 FROM TAT_MENU WHERE MENU_ID = A.UP_MENU_ID) + A.DISPLAY_ORDER  END AS VIRTUAL_ORDER
+		    FROM (SELECT A.MENU_ID
+                       , B.UP_MENU_ID
+                       , A.MENU_NAME
+                       , A.MENU_PATH
+                       , A.IS_FOLDER
+                       , B.DEPTH
+                       , A.POPUP_YN
+                       , B.DISPLAY_ORDER
+                       FROM (SELECT MENU_ID
+                                  , MENU_NAME
+                                  , MENU_PATH
+                                  , IS_FOLDER
+                                  , POPUP_YN FROM TAT_MENU WHERE PKG_NAME = #{pkgName})A, (SELECT * FROM TAT_USER_AUTH WHERE LEVEL_ID = #{userLevel}) B
+                                                       WHERE A.MENU_ID = B.MENU_ID 
+                   ) A
+                   LEFT OUTER JOIN 
+                   (SELECT UP_MENU_ID
+                         , COUNT(*) AS CNT 
+                         FROM TAT_USER_AUTH 
+                        WHERE LEVEL_ID = #{userLevel} 
+                          AND UP_MENU_ID > 0 
+                       GROUP BY UP_MENU_ID) B
+                   ON A.MENU_ID = B.UP_MENU_ID
+          
+          ORDER BY VIRTUAL_ORDER, DEPTH, DISPLAY_ORDER 
+            
+		<!-- SELECT *
+             , CASE DEPTH WHEN 3 THEN (SELECT DISPLAY_ORDER * 1000 FROM TAT_MENU WHERE MENU_ID = TBL.TEMP_VALUE) + (SELECT DISPLAY_ORDER FROM TAT_MENU WHERE MENU_ID = TBL.TEMP_VALUE2) ELSE TEMP_VALUE  END AS VIRTUAL_ORDER
+FROM  (SELECT B.MENU_ID
+		     , B.UP_MENU_ID
+		     , B.MENU_NAME
+		     , B.MENU_PATH
+		     , B.IS_FOLDER
+		     , B.DEPTH
+		     , B.POPUP_YN
+		     , IFNULL(B.CHILD_CNT, 0) AS CHILD_CNT
+         , B.DISPLAY_ORDER
+		     , CASE B.DEPTH WHEN 1 THEN B.DISPLAY_ORDER*1000 WHEN 2 THEN (SELECT DISPLAY_ORDER * 1000 FROM TAT_MENU WHERE MENU_ID = B.UP_MENU_ID) + B.DISPLAY_ORDER ELSE (SELECT UP_MENU_ID FROM TAT_MENU WHERE MENU_ID = B.UP_MENU_ID) END AS TEMP_VALUE
+		     , CASE B.DEPTH WHEN 1 THEN B.DISPLAY_ORDER*1000 WHEN 2 THEN (SELECT DISPLAY_ORDER * 1000 FROM TAT_MENU WHERE MENU_ID = B.UP_MENU_ID) + B.DISPLAY_ORDER ELSE (SELECT MENU_ID FROM TAT_MENU WHERE MENU_ID = B.UP_MENU_ID) END AS TEMP_VALUE2
+            FROM (SELECT B.MENU_ID
+                      FROM (SELECT A.LEVEL_ID
+                                 , B.LEVEL_TITLE
+                                FROM TAT_USER A
+                                   , TAT_USER_LEVEL B
+                               WHERE A.LEVEL_ID = B.LEVEL_ID 
+                                 AND A.USER_ID = #{userId}
+                            ) A
+                          , TAT_USER_AUTH B
+                     WHERE A.LEVEL_ID = B.LEVEL_ID
+                 ) A
+               , (SELECT A.MENU_ID
+                       , A.UP_MENU_ID
+                       , A.MENU_NAME
+                       , A.MENU_PATH
+                       , A.IS_FOLDER
+                       , A.DEPTH
+                       , A.POPUP_YN
+                       , A.DISPLAY_ORDER
+                       , IFNULL(CNT, 0) AS CHILD_CNT 
+                       FROM (SELECT MENU_ID
+                                  , UP_MENU_ID
+                                  , MENU_NAME
+                                  , MENU_PATH
+                                  , IS_FOLDER
+                                  , DEPTH
+                                  , POPUP_YN
+                                  , DISPLAY_ORDER
+                                  FROM (SELECT PKG_NAME FROM TAT_PKG WHERE EMS_YN != 'Y') A
+                                      , TAT_MENU B 
+                                 WHERE A.PKG_NAME = B.PKG_NAME
+                             ) A 
+                             LEFT OUTER JOIN 
+                             (SELECT UP_MENU_ID
+                                   , COUNT(*) AS CNT 
+                                   FROM TAT_MENU 
+                                  WHERE UP_MENU_ID > 0 
+                                 GROUP BY UP_MENU_ID
+                             ) B ON A.MENU_ID = B.UP_MENU_ID
+               ) B
+           WHERE A.MENU_ID = B.MENU_ID) TBL 
+           ORDER BY VIRTUAL_ORDER, DEPTH -->
+	</select>
+	
+	
+	
+	<select id="findMenu" resultType="hashmap">
+		SELECT   0  AS id
+	           ,'#' AS parent
+	           ,'MENU' AS  text
+	           ,'Y'    AS is_folder
+               ,#{package_id} AS  PKG_NAME
+               ,(SELECT DB_NAME FROM TAT_PKG WHERE PKG_NAME = #{package_id} ) AS DB_NAME
+               ,0 AS DEPTH
+        UNION
+	    SELECT  id 
+	          , parent
+	          , text
+	          , is_folder
+              , PKG_NAME
+              , DB_NAME
+              , DEPTH
+			FROM
+			(SELECT  M.MENU_ID AS id
+		           , M.UP_MENU_ID AS  parent  
+			       , M.MENU_NAME AS text
+			       , CASE M.IS_FOLDER 
+		             WHEN 'Y'
+		             THEN IS_FOLDER
+		             ELSE 'N'
+		             END  AS is_folder
+                   , M.PKG_NAME
+                   ,(SELECT DB_NAME FROM TAT_PKG WHERE PKG_NAME = M.PKG_NAME ) AS DB_NAME  
+                   , M.DEPTH
+			       , M.MENU_ID*1000+DISPLAY_ORDER as DP 
+			   FROM TAT_MENU M
+	       WHERE 1=1
+	       <if test="package_id != null and package_id != ''">
+	         AND M.PKG_NAME = #{package_id}    
+	       </if>
+			 ORDER BY DP ASC	)A
+	</select>
+	
+	
+	
+	<select id="getMenu" parameterType="String" resultType="com.ntels.avocado.domain.atom.security.menu.Menu">
+		SELECT
+			* 
+		FROM
+			TAT_MENU
+		WHERE
+			menu_id = #{menu_no}
+     </select>
+     
+     <select id="getNewMenuId" parameterType="com.ntels.avocado.domain.atom.security.menu.Menu"
+                               resultType="Integer">
+     	SELECT MAX(MENU_ID) AS MENU_ID  
+     	  FROM TAT_MENU
+     </select>
+ 
+   	<insert id="insert" parameterType="com.ntels.avocado.domain.atom.security.menu.Menu">
+		INSERT INTO
+		  TAT_MENU
+		  (
+		    UP_MENU_ID
+		   ,MENU_NAME
+		   ,DEPTH
+		   ,DISPLAY_ORDER
+		   ,MENU_PATH
+		   ,IMG_PATH
+		   ,IS_FOLDER
+		   ,POPUP_YN
+		   ,DESCRIPTION
+		   ,PKG_NAME
+		   )
+		VALUES
+		  (
+		    #{up_menu_id}
+		   ,#{menu_name}
+		   ,#{depth}
+		   ,(SELECT IFNULL(MAX(DISPLAY_ORDER)+1,1) FROM TAT_MENU A WHERE UP_MENU_ID = #{up_menu_id} )
+		   ,#{menu_path}
+		   ,#{img_path}
+		   ,#{is_folder}
+		   ,#{popup_yn}
+		   ,#{description}
+		   ,#{pkg_name}
+		  )
+	</insert>
+     
+     <update id="update" parameterType="com.ntels.avocado.domain.atom.security.menu.Menu">
+		UPDATE 
+				  TAT_MENU 
+		   SET   
+			      MENU_NAME = #{menu_name}
+				, MENU_PATH = #{menu_path}
+				, IMG_PATH = #{img_path}
+				, POPUP_YN = #{popup_yn}
+				, DESCRIPTION = #{description}
+		WHERE 
+		          MENU_ID = #{menu_id}
+	</update>
+	
+	
+	<delete id="delete" parameterType="Integer">
+		DELETE FROM
+			TAT_MENU
+		WHERE
+			MENU_ID = #{menu_id}
+     </delete>
+     
+     <delete id="deleteUserAuth" parameterType="Integer">
+		DELETE FROM
+			TAT_USER_AUTH
+		WHERE
+			MENU_ID = #{menu_id}
+     </delete>
+	
+	
+	<select id="list" resultType="com.ntels.avocado.domain.atom.security.menu.Menu">
+		SELECT
+			*
+		FROM
+			TAT_MENU
+		WHERE PKG_NAME = #{package_id}	
+		ORDER BY DEPTH, DISPLAY_ORDER,  MENU_ID
+     </select>
+	
+</mapper>

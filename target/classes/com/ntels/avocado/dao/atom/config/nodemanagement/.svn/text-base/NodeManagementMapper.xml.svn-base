@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ntels.avocado.dao.atom.config.nodemanagement.NodeManagementMapper">
+
+	<select id="listNodeGrp" resultType="java.util.Map">
+		SELECT NODE_GRP_ID   AS ID
+		     , NODE_GRP_NAME AS NAME 
+		  FROM TAT_NODE_GRP
+		 WHERE 1=1
+		 ORDER BY NODE_GRP_ID 
+	</select>
+
+	<select id="listNodeType" resultType="java.util.Map">
+		SELECT NODE_TYPE AS ID
+		     , NODE_TYPE AS NAME
+		  FROM TAT_NODE_TYPE
+		 WHERE 1=1
+		   AND PKG_NAME = #{pkg_name}
+		 ORDER BY NODE_TYPE
+	</select>
+	
+	<select id="duplChkNodeName" resultType="int">
+		SELECT COUNT(*)
+		  FROM TAT_NODE
+		 WHERE 1=1
+		   AND NODE_NAME = #{nodeName}
+		   <if test="nodeNo != '' and nodeNo != null ">
+		   AND NOT NODE_NO = #{nodeNo}
+		   </if>
+	</select>
+	
+	<select id="count" resultType="int">
+		SELECT COUNT(*)
+		  FROM TAT_NODE A
+		 WHERE 1=1
+		   <if test="condition.pkgName != 'all' and condition.pkgName != '' and condition.pkgName != null">
+		   AND PKG_NAME = #{condition.pkgName}
+		   </if>
+		   <if test="condition.node_name != '' and condition.node_name != null">
+		   AND NODE_NAME LIKE CONCAT('%', #{condition.node_name, jdbcType=CHAR}, '%')
+		   </if>
+		   <if test="condition.ip != '' and condition.ip != null">
+		   AND IP LIKE CONCAT('%', #{condition.ip , jdbcType=CHAR}, '%')
+		   </if>
+	</select>
+	
+	<select id="list" resultType="com.ntels.avocado.domain.atom.config.nodemanagement.NodeManagementDomain">
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_header" />
+			SELECT A.NODE_NO
+			     , A.NODE_NAME
+			     , A.IP
+			     , A.PKG_NAME
+           		 , A.NODE_GRP_ID
+           		 , (SELECT NODE_GRP_NAME FROM TAT_NODE_GRP WHERE 1=1 AND A.NODE_GRP_ID = NODE_GRP_ID) AS NODE_GRP_NAME
+       			 , A.NODE_TYPE
+       			 , (SELECT CODE_NAME FROM TAT_COMMON_CODE WHERE 1=1 AND A.INTERNAL_YN = DETAIL_CD AND GROUP_CD = '200005') AS INTERNAL_YN
+ 				 , (SELECT CODE_NAME FROM TAT_COMMON_CODE WHERE 1=1 AND A.USE_YN = DETAIL_CD AND GROUP_CD = '200005') AS USE_YN
+			     , A.DESCRIPTION
+			  FROM TAT_NODE A
+			 WHERE 1=1
+			   <if test="condition.pkgName != 'all' and condition.pkgName != '' and condition.pkgName != null ">
+			   AND PKG_NAME = #{condition.pkgName}
+			   </if>		   					       
+			   <if test="condition.node_name != '' and condition.node_name != null">
+			   AND NODE_NAME LIKE CONCAT('%', #{condition.node_name , jdbcType=CHAR}, '%')
+			   </if>
+			   <if test="condition.ip != '' and condition.ip != null">
+			   AND IP LIKE CONCAT('%', #{condition.ip , jdbcType=CHAR}, '%')
+			   </if>
+			 <if test="condition.orderBy != '' and condition.orderBy != null">
+			 ORDER BY ${condition.orderBy}
+			 </if>
+			 <if test="condition.orderBy == '' or condition.orderBy == null">
+			 ORDER BY NODE_NAME, IP, PKG_NAME DESC 
+			 </if>
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_footer" />
+	</select>
+	
+	<select id="detail" resultType="com.ntels.avocado.domain.atom.config.nodemanagement.NodeManagementDomain">
+		SELECT A.NODE_NO
+			 , A.NODE_NAME
+			 , A.IP
+			 , A.PKG_NAME
+			 , A.NODE_GRP_ID
+			 , (SELECT NODE_GRP_NAME FROM TAT_NODE_GRP WHERE 1=1 AND A.NODE_GRP_ID = NODE_GRP_ID) AS NODE_GRP_NAME
+			 , A.NODE_TYPE
+			 , A.INTERNAL_YN
+			 , A.USE_YN
+			 , A.DESCRIPTION
+		  FROM TAT_NODE A
+		 WHERE 1=1
+		   AND NODE_NO = #{condition.node_no}
+	</select>
+	
+	<insert id="addAction" parameterType="com.ntels.avocado.domain.atom.config.nodemanagement.NodeManagementDomain">
+		INSERT INTO TAT_NODE(
+			  NODE_NAME
+			, PKG_NAME
+			, IP
+			, NODE_GRP_ID
+			, NODE_TYPE
+			, INTERNAL_YN
+			, USE_YN
+			, DESCRIPTION
+			)
+		VALUES(
+			  #{condition.node_name}
+			, #{condition.pkg_name}
+			, #{condition.ip}
+			, #{condition.node_grp_id}
+			, #{condition.node_type}
+			, #{condition.internal_yn}
+			, #{condition.use_yn}
+			, #{condition.description}
+			)
+	</insert>
+	
+	<update id="modifyAction" parameterType="com.ntels.avocado.domain.atom.config.nodemanagement.NodeManagementDomain">
+		UPDATE TAT_NODE
+		   SET NODE_NAME = #{condition.node_name}
+		     , PKG_NAME = #{condition.pkg_name}
+		     , IP = #{condition.ip}
+		     , NODE_GRP_ID = #{condition.node_grp_id}
+		     , NODE_TYPE = #{condition.node_type}
+		     , INTERNAL_YN = #{condition.internal_yn}
+		     , USE_YN = #{condition.use_yn}
+		     , DESCRIPTION = #{condition.description}
+		 WHERE 1=1
+		   AND NODE_NO = #{condition.node_no}
+	</update>
+	
+	<delete id="removeAction" parameterType="com.ntels.avocado.domain.atom.config.nodemanagement.NodeManagementDomain">
+		DELETE FROM TAT_NODE
+		 WHERE 1=1
+		   AND NODE_NO = #{condition.node_no}
+	</delete>
+	
+	<select id="listExcel" resultType="java.util.LinkedHashMap">
+		SELECT A.NODE_NAME AS 'Node Name'
+		     , A.IP AS 'IP'
+		     , A.PKG_NAME AS 'Package'
+       		 , (SELECT NODE_GRP_NAME FROM TAT_NODE_GRP WHERE 1=1 AND A.NODE_GRP_ID = NODE_GRP_ID) AS 'Node Group'
+   			 , A.NODE_TYPE AS 'Node Type'
+   			 , (SELECT CODE_NAME FROM TAT_COMMON_CODE WHERE 1=1 AND A.INTERNAL_YN = DETAIL_CD AND GROUP_CD = '200005') AS 'Internal Node'
+			 , (SELECT CODE_NAME FROM TAT_COMMON_CODE WHERE 1=1 AND A.USE_YN = DETAIL_CD AND GROUP_CD = '200005') AS 'Use'
+		     , IFNULL(A.DESCRIPTION,'') AS 'Description'
+		  FROM TAT_NODE A
+		 WHERE 1=1
+		   <if test="condition.pkgName != 'all' and condition.pkgName != null and condition.pkgName != ''">
+		   AND PKG_NAME = #{condition.pkgName}
+		   </if>		   					       
+		   <if test="condition.node_name != '' and condition.node_name != null">
+		   AND NODE_NAME LIKE CONCAT('%', #{condition.node_name , jdbcType=CHAR}, '%')
+		   </if>
+		   <if test="condition.ip != '' and condition.ip != null">
+		   AND IP LIKE CONCAT('%', #{condition.ip , jdbcType=CHAR}, '%')
+		   </if>
+		 <if test="condition.orderBy != '' and condition.orderBy != null">
+		 ORDER BY ${condition.orderBy}
+		 </if>
+		 <if test="condition.orderBy == '' or condition.orderBy == null">
+		 ORDER BY NODE_NAME, IP, PKG_NAME DESC 
+		 </if>
+	</select>
+</mapper>

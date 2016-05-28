@@ -1,0 +1,559 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <mapper namespace="com.ntels.avocado.dao.common.CommonCodeMapper">
+ 
+ 	<!-- <sql id="paging_head_mysql">
+		SELECT * 
+		FROM(
+			SELECT @rownum := @rownum + 1 AS rownum, listA.*
+			FROM (  
+				SELECT @rownum := 0) r, (
+	</sql>
+	
+	<sql id="paging_foot_mysql">
+				) listA
+			) listB
+		WHERE 
+		<![CDATA[  
+				listB.rownum <= (#{end}+#{start})
+			AND listB.rownum > #{start}
+	    ]]>
+	</sql> -->
+   	
+    <!-- DB 날짜(년,월,일) 패턴 조회 -->
+	<select id="DbdatePattern" parameterType="String" resultType="String">
+		SELECT DB_PATTERN_DATE 
+		    FROM TAT_DATE_PATTERN 
+		   WHERE LOCALE = #{locale}
+	</select>
+	
+	
+	<!-- DB 날짜(년,월) 패턴 조회 -->
+	<select id="DbdatePatternMonth" parameterType="String" resultType="String">
+		SELECT DB_PATTERN_MONTH 
+		    FROM TAT_DATE_PATTERN 
+		   WHERE LOCALE = #{locale}
+	</select>
+ 
+ 
+    <!-- 패키지/시스템 중 패키지  -->
+    <select id="listPackageId" databaseId="mysql" resultType="java.util.HashMap">
+		SELECT DISTINCT PKG_NAME AS ID 
+		     , PKG_NAME AS NAME
+		  FROM TAT_PKG  
+		 WHERE 1=1
+		 ORDER BY ID
+    </select>
+    
+    <!-- 패키지/시스템 중 패키지 count -->
+    <select id="listPackageCnt" databaseId="mysql" resultType="int">
+		SELECT COUNT(*)
+		  FROM (SELECT DISTINCT PKG_NAME AS ID 
+				     , PKG_NAME AS NAME
+				  FROM TAT_PKG  
+				 WHERE 1=1
+				 ORDER BY ID
+			    ) A
+    </select>
+    
+    <!-- 패키지/시스템 중 시스템 -->
+    <select id="listSystemId" databaseId="mysql" resultType="java.util.HashMap">
+		SELECT  NODE_NO       AS ID
+		       ,NODE_NAME     AS NAME 
+		       ,PKG_NAME      AS PACKAGEID
+		       ,NODE_TYPE AS NODETYPE
+          FROM TAT_NODE TN
+		 WHERE 1=1
+ 		  ORDER BY NAME
+    </select>
+    
+    <!-- 패키지/시스템 중 시스템  (Performance Statistics) 용-->
+    <select id="listSystemName" databaseId="mysql" resultType="java.util.HashMap">
+		SELECT  NODE_NAME     AS ID
+		       ,NODE_NAME     AS NAME 
+		       ,PKG_NAME        AS PACKAGEID
+          FROM TAT_NODE TN
+		 WHERE 1=1
+ 		  ORDER BY NAME
+    </select>
+    
+    <!-- 패키지/시스템 중 시스템 (Daily Policy)-->
+    <select id="listNodeType" databaseId="mysql" resultType="java.util.HashMap">
+		SELECT  NODE_TYPE     AS NAME 
+		       ,PKG_NAME      AS PACKAGEID
+          FROM TAT_NODE_TYPE
+		 WHERE 1=1
+ 		  ORDER BY NAME
+    </select>
+    
+    <select id="getSystemCount" databaseId="mysql" resultType="int">
+		SELECT  COUNT(*)
+          FROM TAT_NODE
+         WHERE 1=1
+    </select>
+    
+    <!-- Yes, No 리스트 -->
+	<select id="listAlphaYn" resultType="java.util.HashMap">
+		SELECT DETAIL_CD  AS ID 
+		     , CODE_NAME  AS NAME
+		  FROM TAT_COMMON_CODE 
+		 WHERE 1=1
+		   AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_GROUP_CODE_YN" />
+		 ORDER BY DISPLAY_ORDER
+	</select>
+	
+    <!-- 알람 그룹 콤보 -->
+    <select id="listAlmGroup" resultType="java.util.HashMap">
+	 	SELECT DETAIL_CD AS ID
+		     , CODE_NAME   AS NAME
+		  FROM TAT_COMMON_CODE
+		 WHERE 1=1
+		   AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_ALARM_GROUP_CODE"/>
+		 ORDER BY DISPLAY_ORDER
+    </select>
+    
+    <!-- alarmSeverity combo -->
+    <select id="listAlarmSeverity" resultType="java.util.HashMap">
+		SELECT DETAIL_CD   AS ID
+		     , CODE_NAME   AS NAME
+		  FROM TAT_COMMON_CODE
+		 WHERE 1=1
+		   AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_ALARM_SEVERITY_CODE"/>
+		 ORDER BY DISPLAY_ORDER
+	</select>
+
+    <!-- alarmGroup combo -->
+    <select id="listAlarmGroup" resultType="java.util.HashMap">
+		SELECT DETAIL_CD   AS ID
+		     , CODE_NAME   AS NAME
+		  FROM TAT_COMMON_CODE
+		 WHERE 1=1
+		   AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_ALARM_GROUP_CODE"/>
+		 ORDER BY DISPLAY_ORDER
+	</select>
+	
+    <!-- alarmType combo -->
+    <select id="listAlarmType" resultType="java.util.HashMap">
+		SELECT DETAIL_CD   AS ID
+		     , CODE_NAME   AS NAME
+		  FROM TAT_COMMON_CODE
+		 WHERE 1=1
+		   AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_ALARM_TYPE_CODE"/>
+		 ORDER BY DISPLAY_ORDER
+	</select>
+	
+	<!-- schedule cycle type -->
+    <select id="listScheduleCycleType" resultType="java.util.HashMap">
+        SELECT
+             DETAIL_CD AS ID
+			,CODE_NAME   AS NAME
+		FROM  TAT_COMMON_CODE
+		WHERE GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.BATCH_GROUP_SCHEDULE_CYCLE_TYPE"/>
+        ORDER BY DISPLAY_ORDER                        
+    </select>
+	
+    <!-- 클리어 FLAG 콤보-->
+	<select id="listClearedFlag" resultType="java.util.HashMap">
+		SELECT 'all' AS ID
+			  ,'ALL' AS NAME
+		UNION     
+		(SELECT DETAIL_CD AS ID
+					 ,CODE_NAME   AS NAME
+			FROM  TAT_COMMON_CODE
+			WHERE GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.ALARM_STATISTICS_COMMON_GROUP_CODE_CLEARED_FLAG"/>
+			ORDER BY DISPLAY_ORDER )                       
+    </select>
+    
+    <!-- Search Type 콤보 -->
+    <select id="listSearchType" resultType="java.util.HashMap">
+        SELECT
+             DETAIL_CD AS ID
+			,CODE_NAME   AS NAME
+		FROM  TAT_COMMON_CODE
+		WHERE GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.ALARM_STATISTICS_COMMON_GROUP_CODE_SEARCH_TYPE"/>
+        ORDER BY DISPLAY_ORDER                        
+    </select>
+
+	<!-- Resource Name combo -->
+    <select id="listRscName" resultType="java.util.HashMap">
+		SELECT  RSC_GRP_ID   AS ID
+		       ,RSC_GRP_NAME AS NAME
+		  FROM TAT_RSC_GRP_DEF
+		  WHERE STAT_YN = 'Y'
+	</select>
+	
+	
+	 <!-- Resource Id combo -->
+    <select id="rscGrpId" resultType="java.util.HashMap">
+		SELECT  RSC_ID    AS ID
+		       ,RSC_NAME  AS NAME
+		  FROM TAT_RSC_DEF 
+		WHERE RSC_GRP_ID = #{rscGrpId} 
+	</select>
+	
+	
+    <!-- rscGrpId count -->
+    <select id="rscUseYn" resultType="int">
+		SELECT  COUNT(*)
+		  FROM TAT_RSC_DEF 
+		WHERE RSC_GRP_ID = #{rscGrpId} 
+	</select>
+	
+	
+	<!-- listStsTable combo -->
+    <select id="listStsTable" resultType="java.util.HashMap">
+		SELECT  TABLE_NAME    AS ID
+		       ,DISPLAY_NAME  AS NAME
+		  FROM TAT_STS_TABLE_INFO 
+		WHERE 1=1 
+		AND TYPE = 'STS'
+		AND DISPLAY_YN = 'Y'
+	</select>
+	
+	<!-- listStsComboGroup  -->
+    <select id="listStsComboGroup" resultType="java.util.HashMap">
+      SELECT  CI.TABLE_NAME AS TABLE_NAME
+             ,CI.COLUMN_NAME AS COLUMN_NAME
+		  FROM TAT_STS_COLUMN_INFO CI 
+		  WHERE 1=1
+		  AND TABLE_NAME IN (SELECT TABLE_NAME FROM TAT_STS_TABLE_INFO WHERE TYPE = 'STS' AND DISPLAY_YN = 'Y')
+		  AND PRI_KEY_YN='Y'
+	</select>
+	
+	<!-- listStsComboValue  -->
+    <select id="listStsComboValue" resultType="java.util.HashMap">
+		SELECT  A.TABLE_NAME
+		       ,A.COLUMN_NAME
+		       ,B.ENUM_VALUE
+		  FROM ( SELECT     CI.TABLE_NAME   AS TABLE_NAME
+		                   ,CI.COLUMN_NAME AS COLUMN_NAME
+		              FROM TAT_STS_COLUMN_INFO CI
+		             WHERE PRI_KEY_YN = 'Y'
+		               AND TABLE_NAME IN (SELECT TABLE_NAME FROM TAT_STS_TABLE_INFO WHERE TYPE = 'STS' AND DISPLAY_YN = 'Y')
+				    ) A 
+				    LEFT OUTER JOIN 
+				    ( SELECT   TABLE_NAME 
+				              ,COLUMN_NAME
+				  		      ,ENUM_VALUE
+				  	    FROM TAT_STS_COLUMN_ENUM_INFO ) B
+					 ON A.COLUMN_NAME = B.COLUMN_NAME
+					AND A.TABLE_NAME  = B.TABLE_NAME
+	</select>
+	
+	
+	<select id="typeOfColumn" parameterType="String" resultType="String">
+	  SELECT UCASE(DATA_TYPE)
+		FROM TAT_STS_COLUMN_INFO
+	   WHERE 1=1 
+		 AND PRI_KEY_YN = 'Y'
+		 AND COLUMN_NAME = #{columnName}
+         AND TABLE_NAME = #{tableName}
+	</select>
+	
+	
+	
+	<select id="getViewColList" parameterType="String" resultType="String">
+		SELECT GROUP_CONCAT(COLUMN_NAME) 
+		FROM TAT_STS_COLUMN_INFO 
+		WHERE 1=1
+		AND PRI_KEY_YN = #{pri_key_yn} 
+		AND TABLE_NAME = #{tableName}
+		ORDER BY SEQUENCE
+	</select>
+
+		
+	<select id="getDbName"  resultType="String">
+		SELECT DB_NAME 
+		  FROM TAT_PKG
+	     WHERE TAT_PKG.PKG_NAME = ( SELECT DISTINCT PKG_NAME 
+		                              FROM TAT_STS_TABLE_INFO 
+		                             WHERE TABLE_NAME = #{tableName} )
+	</select>
+ 
+ 
+ 	<select id="getTopCountColumn" parameterType="String" resultType="String">
+		SELECT TOP_COUNT_COLUMN
+		FROM TAT_STS_TABLE_INFO 
+		WHERE 1=1
+		AND TABLE_NAME = #{tableName}  
+	</select>
+ 
+  	<select id="getChartColumn" parameterType="String" resultType="String">
+	 SELECT GROUP_CONCAT(COLUMN_NAME)
+	   FROM TAT_STS_COLUMN_INFO 
+	  WHERE 1=1
+		AND PRI_KEY_YN = 'N'
+		AND CHART_YN   = 'Y'   
+		AND TABLE_NAME = #{tableName}
+	</select>
+ 
+  	<select id="getChartColumnCount" parameterType="String" resultType="int">
+	 SELECT COUNT(COLUMN_NAME)
+	   FROM TAT_STS_COLUMN_INFO 
+	  WHERE 1=1
+		AND PRI_KEY_YN = 'N'
+		AND CHART_YN   = 'Y'   
+		AND TABLE_NAME = #{tableName}
+	</select>
+	
+  	<select id="getHourlyCollectTime" parameterType="String" resultType="int">
+	 SELECT CASE WHEN CHECK_TIME  <![CDATA[ >= ]]> DATE_FORMAT(now(),'%H') 
+			     THEN HOURLY_COLLECT_TIME-1
+			      ELSE HOURLY_COLLECT_TIME 
+            END
+	   FROM TAT_STS_PKG_CONFIG
+	   WHERE PKG_NAME = 'ATOM'
+	 LIMIT 1
+	</select>
+	
+	 <select id="getDailyCollectTime" parameterType="String" resultType="int">
+	 SELECT DAILY_COLLECT_TIME
+	   FROM TAT_STS_PKG_CONFIG
+	   WHERE PKG_NAME = 'ATOM'
+	 LIMIT 1
+	</select>	
+
+	<!-- listRcdTable combo -->
+    <select id="listRcdTable" resultType="java.util.HashMap">
+		SELECT  TABLE_NAME    AS ID
+		       ,DISPLAY_NAME  AS NAME
+		  FROM TAT_STS_TABLE_INFO 
+		WHERE 1=1 
+		AND TYPE = 'RCD'
+		AND DISPLAY_YN = 'Y'
+	</select>
+	
+	<!-- listStsComboGroup  -->
+    <select id="listRcdComboGroup" resultType="java.util.HashMap">
+      SELECT  CI.TABLE_NAME AS TABLE_NAME
+             ,CI.COLUMN_NAME AS COLUMN_NAME
+		  FROM TAT_STS_COLUMN_INFO CI 
+		  WHERE 1=1
+		  AND TABLE_NAME IN (SELECT TABLE_NAME FROM TAT_STS_TABLE_INFO WHERE TYPE = 'RCD' AND DISPLAY_YN = 'Y')
+		  AND PRI_KEY_YN='Y'
+	</select>
+	
+	<!-- listStsComboValue  -->
+    <select id="listRcdComboValue" resultType="java.util.HashMap">
+		SELECT  A.TABLE_NAME
+		       ,A.COLUMN_NAME
+		       ,B.ENUM_VALUE
+		  FROM ( SELECT     CI.TABLE_NAME   AS TABLE_NAME
+		                   ,CI.COLUMN_NAME AS COLUMN_NAME
+		                   FROM TAT_STS_COLUMN_INFO CI
+		             WHERE PRI_KEY_YN = 'Y'
+		               AND TABLE_NAME IN (SELECT TABLE_NAME FROM TAT_STS_TABLE_INFO WHERE TYPE = 'RCD' AND DISPLAY_YN = 'Y')
+				    ) A 
+				    LEFT OUTER JOIN 
+				    ( SELECT   TABLE_NAME
+				              ,COLUMN_NAME
+				  		      ,ENUM_VALUE
+				  	    FROM TAT_STS_COLUMN_ENUM_INFO ) B
+					ON A.COLUMN_NAME = B.COLUMN_NAME
+					AND A.TABLE_NAME  = B.TABLE_NAME
+	</select>
+
+ 
+    <!--Statistics 조회 주기 조건절 -->
+	<sql id="typeIdCondition">
+		<choose>
+			<when test="condition.typeId != null and condition.typeId != '' and condition.typeId != 'all'">
+			 	<if test="condition.typeId == 1"> <!-- 5분주기 -->
+				    CONCAT(DATE_FORMAT(PRC_DATE,'%Y-%m-%d'),' ',DATE_FORMAT(PRC_DATE ,'%H'),':',
+						CASE FLOOR(SUBSTRING(DATE_FORMAT(PRC_DATE ,'%H%i'), 3, 2) / 5) WHEN 0  THEN '00' WHEN 1  THEN '05' WHEN 2  THEN '10' WHEN 3  THEN '15' WHEN 4  THEN '20'
+															      WHEN 5  THEN '25' WHEN 6  THEN '30' WHEN 7  THEN '35' WHEN 8  THEN '40' WHEN 9  THEN '45'
+																  WHEN 10 THEN '50' ELSE '55' END)
+			 	</if>
+			 	<if test="condition.typeId == 5"> <!-- 10분주기 -->
+					CONCAT(DATE_FORMAT(PRC_DATE,'%Y-%m-%d'),' ',DATE_FORMAT(PRC_DATE ,'%H'),':',
+						CASE FLOOR(SUBSTRING(DATE_FORMAT(PRC_DATE ,'%H%i'), 3, 2) / 10) WHEN 0  THEN '00' WHEN 1  THEN '10' WHEN 2  THEN '20' WHEN 3  THEN '30'
+		                                                           WHEN 4  THEN '40' ELSE '50' END)
+		        </if>
+		        <if test="condition.typeId == 6"> <!-- 30분주기 -->
+		        	CONCAT(DATE_FORMAT(PRC_DATE,'%Y-%m-%d'),' ',DATE_FORMAT(PRC_DATE ,'%H'),':',
+						CASE FLOOR(SUBSTRING(DATE_FORMAT(PRC_DATE ,'%H%i'), 3, 2) / 30) WHEN 0  THEN '00' ELSE '30' END)
+		        </if>  
+			 	<if test="condition.typeId == 2"> <!-- 시간대별 -->
+			     	CONCAT(DATE_FORMAT(PRC_DATE,'%Y-%m-%d'),' ',DATE_FORMAT(PRC_DATE ,'%H'))
+			 	</if>
+			 	<if test="condition.typeId == 3"> <!-- 일별 -->
+			     	DATE_FORMAT(PRC_DATE,'%Y-%m-%d')
+			 	</if>
+			 	<if test="condition.typeId == 4"> <!-- 월별 -->
+			     	DATE_FORMAT(PRC_DATE,'%Y-%m')
+			 	</if>
+			</when>
+		    <otherwise>
+				    CONCAT(DATE_FORMAT(PRC_DATE,'%Y-%m-%d'), ' ', DATE_FORMAT(PRC_DATE ,'%H'), ':', 
+				    	CASE FLOOR(SUBSTRING(DATE_FORMAT(PRC_DATE ,'%H%i'), 3, 2) / 5) WHEN 0  THEN '00' WHEN 1  THEN '05' WHEN 2  THEN '10' WHEN 3  THEN '15' WHEN 4  THEN '20'
+															      WHEN 5  THEN '25' WHEN 6  THEN '30' WHEN 7  THEN '35' WHEN 8  THEN '40' WHEN 9  THEN '45'
+																  WHEN 10 THEN '50' ELSE '55' END)
+		    </otherwise>
+	   </choose>
+	</sql>
+	
+    <!--datetimeFromClause -->
+	<sql id="datetimeFromClause">
+		<choose>
+			<when test="condition.typeId != null and condition.typeId != '' and condition.typeId != 'all'">
+				<if test="condition.typeId == 1 || condition.typeId == 5 || condition.typeId == 6 "> <!-- 5, 10, 30 cycle -->
+					SELECT @R:=@R+1 AS ROWNUM, 
+					       DATE_FORMAT(DATE_ADD(STR_TO_DATE(CONCAT(#{condition.startDate},#{condition.startTime}), '%Y%m%d%H%i'), INTERVAL + (@R-1) * <if test="condition.typeId == 1">5</if><if test="condition.typeId == 5">10</if><if test="condition.typeId == 6">30</if> MINUTE), '%Y-%m-%d %H:%i') AS PRC_DATE
+					FROM  TAT_SEQ S,
+					(SELECT @R:=0) AS R
+					WHERE @R <![CDATA[<]]> TIMESTAMPDIFF(MINUTE, STR_TO_DATE(CONCAT(#{condition.startDate},#{condition.startTime}), '%Y%m%d%H%i'), STR_TO_DATE(CONCAT(#{condition.endDate},#{condition.endTime}), '%Y%m%d%H%i')) 
+					                        / <if test="condition.typeId == 1">5</if><if test="condition.typeId == 5">10</if><if test="condition.typeId == 6">30</if>
+		        </if>
+		        <if test="condition.typeId == 2"> <!-- 시간별 -->
+					SELECT @R:=@R+1 AS ROWNUM, 
+					       DATE_FORMAT(DATE_ADD(STR_TO_DATE(SUBSTR(CONCAT(#{condition.startDate},#{condition.startTime}), 1, 10), '%Y%m%d%H'), INTERVAL + (@R-1) HOUR), '%Y-%m-%d %H') AS PRC_DATE
+					FROM  TAT_SEQ S,
+					(SELECT @R:=0) AS R
+					WHERE @R <![CDATA[<]]> TIMESTAMPDIFF(HOUR, STR_TO_DATE(CONCAT(#{condition.startDate},#{condition.startTime}), '%Y%m%d%H%i'), STR_TO_DATE(CONCAT(#{condition.endDate},#{condition.endTime}), '%Y%m%d%H%i'))
+		        </if>
+		        <if test="condition.typeId == 3"><!--  일별 -->
+					SELECT @R:=@R+1 AS ROWNUM, 
+					       DATE_FORMAT(DATE_ADD(STR_TO_DATE(#{condition.startDate}, '%Y%m%d'), INTERVAL + (@R-1) DAY), '%Y-%m-%d') AS PRC_DATE
+					FROM  TAT_SEQ S,
+					(SELECT @R:=0) AS R
+					WHERE @R <![CDATA[<=]]> TIMESTAMPDIFF(DAY, STR_TO_DATE(CONCAT(#{condition.startDate},#{condition.startTime}), '%Y%m%d%H%i'), STR_TO_DATE(CONCAT(#{condition.endDate},#{condition.endTime}), '%Y%m%d%H%i'))
+		        </if>
+		        <if test="condition.typeId == 4"> <!-- 월별 -->
+					SELECT @R:=@R+1 AS ROWNUM, 
+					       DATE_FORMAT(DATE_ADD(STR_TO_DATE(CONCAT(SUBSTR(#{condition.startDate},1,6),'01'), '%Y%m%d'), INTERVAL + (@R-1) MONTH), '%Y-%m') AS PRC_DATE
+					FROM  TAT_SEQ S,
+					(SELECT @R:=0) AS R
+					WHERE @R <![CDATA[<=]]> TIMESTAMPDIFF(MONTH, STR_TO_DATE(CONCAT(#{condition.startDate},#{condition.startTime}), '%Y%m%d%H%i'), STR_TO_DATE(CONCAT(#{condition.endDate},#{condition.endTime}), '%Y%m%d%H%i'))
+		        </if>
+		    </when>
+		    <otherwise><!-- 전체 -->
+					SELECT @R:=@R+1 AS ROWNUM, 
+					       DATE_FORMAT(DATE_ADD(STR_TO_DATE(CONCAT(#{condition.startDate},#{condition.startTime}), '%Y%m%d%H%i'), INTERVAL + (@R-1) * 5 MINUTE), '%Y-%m-%d %H:%i') AS PRC_DATE
+					FROM  TAT_SEQ S,
+					(SELECT @R:=0) AS R
+					WHERE @R <![CDATA[<]]> TIMESTAMPDIFF(MINUTE, STR_TO_DATE(CONCAT(#{condition.startDate},#{condition.startTime}), '%Y%m%d%H%i'), STR_TO_DATE(CONCAT(#{condition.endDate},#{condition.endTime}), '%Y%m%d%H%i')) / 5
+		    </otherwise>
+		</choose>	
+	</sql>
+	
+	
+	
+	<select id="getSysDate" resultType="String"> 
+        SELECT DATE_FORMAT(now(), #{format}) FROM DUAL
+    </select>
+    
+    <select id="getSysDateTypeII" resultType="String"> 
+        SELECT SUBSTRING(DATE_FORMAT(NOW(), #{format}), ${startPos}, ${length})  FROM DUAL
+    </select>   
+	
+	<select id="getNowHour" resultType="String">
+		SELECT DATE_FORMAT(now(), '%H') FROM DUAL
+	</select>
+	
+	<select id="getNowMin" resultType="String">
+		SELECT DATE_FORMAT(now(), '%i') FROM DUAL
+	</select>
+		
+	<select id="getNowDate" resultType="String">
+		SELECT DATE_FORMAT(now(), (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{language})) FROM DUAL
+	</select>
+	
+	<select id="getNowDateTime" resultType="String">
+		SELECT CONCAT( DATE_FORMAT(now(), (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{language})) ,' ',DATE_FORMAT(now(), '%H%i%s') ) FROM DUAL
+	</select>
+	
+	<select id="listFilterGrpNm" resultType="HashMap">
+		SELECT
+			DISTINCT GROUP_NAME ID, GROUP_NAME NAME
+		FROM
+			T_MDF_FT_DEF
+		WHERE
+				SYSTEM_ID = #{system_id, jdbcType=CHAR}
+			AND SERVICE_ID = '000015'
+		ORDER BY 1
+	 </select>
+	 
+	 <select id="listTraceKeyword" resultType="HashMap">
+	 	SELECT DETAIL_CD AS ID
+		     , CODE_NAME   AS NAME
+		  FROM TAT_COMMON_CODE
+		 WHERE 1=1
+		   AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.TRACE_KEYWORD"/>
+		 ORDER BY DISPLAY_ORDER
+	 </select>
+	
+	 <select id="listTraceMode" resultType="HashMap">
+	 	SELECT DETAIL_CD AS ID
+		     , CODE_NAME   AS NAME
+		  FROM TAT_COMMON_CODE
+		 WHERE 1=1
+		   AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.TRACE_MODE"/>
+		 ORDER BY DISPLAY_ORDER
+	 </select>
+	 
+	 <select id="listPart" resultType="java.util.HashMap">
+        SELECT
+             DETAIL_CD AS ID
+			,CODE_NAME   AS NAME
+		FROM  TAT_COMMON_CODE
+		WHERE GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.BACKUP_RESTORE_GROUP_CODE"/>
+        ORDER BY DISPLAY_ORDER                        
+	  </select>
+	  
+	  
+	 <select id="dailyPolicyDefault" resultType="java.util.HashMap">
+        SELECT
+             DETAIL_CD AS ID
+			,CODE_NAME   AS NAME
+		FROM  TAT_COMMON_CODE
+		WHERE GROUP_CD IN ( <include refid="com.ntels.avocado.dao.common.CodeDefine.DAILY_POLICY_BACKUP_DEFAULT"/> ,
+							<include refid="com.ntels.avocado.dao.common.CodeDefine.DAILY_POLICY_DELETE_DEFAULT"/> ,
+							<include refid="com.ntels.avocado.dao.common.CodeDefine.DAILY_POLICY_COMP_DEFAULT"/> )
+        ORDER BY DISPLAY_ORDER                        
+	  </select>
+	  
+	  <select id="listDefaultAlarmLevel" resultType="java.util.HashMap">
+	  	SELECT
+             DETAIL_CD AS ID
+			,CODE_NAME   AS NAME
+		FROM  TAT_COMMON_CODE
+		WHERE GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.ALARM_LEVEL_CONFIG_DEFAULT"/>
+		ORDER BY DISPLAY_ORDER ASC
+	  </select>
+	  
+	<select id="getPerFomHourlyCollectTime" parameterType="String" resultType="int">
+	 SELECT CASE WHEN CHECK_TIME  <![CDATA[ >= ]]> DATE_FORMAT(now(),'%H') 
+			     THEN HOURLY_COLLECT_TIME-1
+			      ELSE HOURLY_COLLECT_TIME 
+	           END
+	   FROM TAT_STS_PKG_CONFIG
+	   WHERE PKG_NAME = #{pkgName}
+	 LIMIT 1
+	</select>
+	
+	 <select id="getPerFomDailyCollectTime" parameterType="String" resultType="int">
+	 SELECT DAILY_COLLECT_TIME
+	   FROM TAT_STS_PKG_CONFIG
+	   WHERE PKG_NAME = #{pkgName}
+	 LIMIT 1
+	</select>
+	
+	
+    <select id="getNodeName" parameterType="String" resultType="String">
+	 SELECT NODE_NAME
+	   FROM TAT_NODE
+      WHERE NODE_NO = #{nodeNo}
+	</select>
+
+
+	<!--Statistics combo -->
+    <select id="listTableName" resultType="java.util.HashMap">
+		  SELECT TABLE_NAME
+		  FROM TAT_STS_TABLE_INFO 
+		  <if test="pkgNm != null and pkgNm != '' and pkgNm != 'all' ">
+		 	 WHERE PKG_NAME = #{pkgNm} 
+		  </if> 
+	</select>
+ </mapper>

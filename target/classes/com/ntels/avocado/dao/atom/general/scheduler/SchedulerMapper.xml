@@ -1,0 +1,1262 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ntels.avocado.dao.atom.general.scheduler.SchedulerMapper">
+
+	<!-- ASIS					TOBE 			-->
+	<!-- T_NFW_BATCH_GROUP		TAT_BATCH_JOB 	-->
+	<!-- T_NFW_BATCH_JOB		TAT_BATCH_CMD 	-->
+	
+	<select id="listPkg" resultType="com.ntels.avocado.domain.atom.general.scheduler.SchedulerGroup">
+	 /* [SchedulerMapper.xml].[listPkg].Update(20160404) */
+		SELECT P.PKG_NAME
+     		 , P.DB_NAME
+		  FROM TAT_PKG				P
+		 WHERE 1=1
+		 ORDER BY
+		       P.PKG_NAME ASC
+	</select>
+	
+	<select id="listSchedulerGroupAjax" resultType="com.ntels.avocado.domain.atom.general.scheduler.SchedulerGroup">
+	 /* [SchedulerMapper.xml].[listSchedulerGroup].Update(20160404) */
+	 	SELECT PKG_NAME
+		     , GROUP_NAME
+		     , DATE_FORMAT(CREATE_DATE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{language}))
+		     							CREATE_DATE
+		     , DATE_FORMAT(START_DATE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{language}))
+		     							START_DATE
+		     , DATE_FORMAT(EXPIRE_DATE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{language}))
+		     							EXPIRE_DATE
+		     , (SELECT CODE_NAME 
+		          FROM TAT_COMMON_CODE
+		         WHERE 1=1
+		           AND SCHEDULE_CYCLE_TYPE 	= DETAIL_CD
+		           AND GROUP_CD 		= <include refid="com.ntels.avocado.dao.common.CodeDefine.BATCH_GROUP_SCHEDULE_CYCLE_TYPE"/>) 
+		           						SCHEDULE_CYCLE_TYPE_NM
+		     , SCHEDULE_CYCLE_TYPE
+		     , SCHEDULE_CYCLE
+		     , DESCRIPTION
+		     , (SELECT CODE_NAME 
+		          FROM TAT_COMMON_CODE
+		         WHERE 1=1
+		           AND USE_YN = DETAIL_CD
+		           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_GROUP_CODE_YN"/>) AS USE_YN
+		  FROM TAT_BATCH_GROUP
+		 WHERE 1=1
+		   <if test='pkg_name != null and pkg_name != "" '>
+		   AND PKG_NAME				= #{pkg_name}
+		   </if>
+		   <if test='group_name != null and group_name != "" '>
+		   AND GROUP_NAME			= #{group_name}
+		   </if>
+	</select>
+	
+	<select id="listSchedulerGroup" resultType="com.ntels.avocado.domain.atom.general.scheduler.SchedulerGroup">
+	 /* [SchedulerMapper.xml].[listSchedulerGroup].Update(20160404) */
+	 <include refid="com.ntels.avocado.dao.common.CommonMapper.paging_header"/>
+		SELECT PKG_NAME
+		     , GROUP_NAME
+		     , DATE_FORMAT(CREATE_DATE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{language}))
+		     							CREATE_DATE
+		     , DATE_FORMAT(START_DATE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{language}))
+		     							START_DATE
+		     , DATE_FORMAT(EXPIRE_DATE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{language}))
+		     							EXPIRE_DATE
+		     , (SELECT CODE_NAME 
+		          FROM TAT_COMMON_CODE
+		         WHERE 1=1
+		           AND SCHEDULE_CYCLE_TYPE 	= DETAIL_CD
+		           AND GROUP_CD 		= <include refid="com.ntels.avocado.dao.common.CodeDefine.BATCH_GROUP_SCHEDULE_CYCLE_TYPE"/>) 
+		           						SCHEDULE_CYCLE_TYPE_NM
+		     , SCHEDULE_CYCLE_TYPE
+		     , SCHEDULE_CYCLE
+		     , DESCRIPTION
+		     , (SELECT CODE_NAME 
+		          FROM TAT_COMMON_CODE
+		         WHERE 1=1
+		           AND USE_YN = DETAIL_CD
+		           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_GROUP_CODE_YN"/>) AS USE_YN
+		  FROM TAT_BATCH_GROUP
+		 WHERE 1=1
+		   <if test='pkg_name != null and pkg_name != "" '>
+		   AND PKG_NAME				= #{pkg_name}
+		   </if>
+		   <if test='group_name != null and group_name != "" '>
+		   AND GROUP_NAME			= #{group_name}
+		   </if>
+	<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_footer"/>
+	</select>
+	
+	 <select id="listExcelSchedulerGroup"    resultType="java.util.LinkedHashMap">
+        SELECT /* SchedulerMapper.xml listExcelSchedulerGroup*/
+               PKG_NAME					AS "Package Name"
+		     , GROUP_NAME				AS "Group Name"
+		     , DATE_FORMAT(CREATE_DATE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{language}))
+		     							AS "Create Date"
+		     , DATE_FORMAT(START_DATE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{language}))
+		     							AS "Start Date"
+		     , DATE_FORMAT(EXPIRE_DATE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{language}))
+		     							AS "End Date"
+		     , SCHEDULE_CYCLE			AS "Schedule Cycle"
+		     , (SELECT CODE_NAME 
+		          FROM TAT_COMMON_CODE
+		         WHERE 1=1
+		           AND SCHEDULE_CYCLE_TYPE 	= DETAIL_CD
+		           AND GROUP_CD 		= <include refid="com.ntels.avocado.dao.common.CodeDefine.BATCH_GROUP_SCHEDULE_CYCLE_TYPE"/>) 
+		           						AS "Schedule Cycle Type"
+		     , DESCRIPTION				AS "Description"
+		     , (SELECT CODE_NAME 
+		          FROM TAT_COMMON_CODE
+		         WHERE 1=1
+		           AND USE_YN = DETAIL_CD
+		           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_GROUP_CODE_YN"/>) AS "Use"
+		  FROM TAT_BATCH_GROUP
+		 WHERE 1=1
+		   AND PKG_NAME				= #{pkg_name}
+		   <if test='group_name != null and group_name != "" '>
+		   AND GROUP_NAME			= #{group_name}
+		   </if>
+    </select>
+
+	<select id="countSchedulerGroup" resultType="int">
+	 /* [SchedulerMapper.xml].[countSchedulerGroup].Update(20160404) */
+		SELECT COUNT(0)
+		  FROM TAT_BATCH_GROUP
+		 WHERE 1=1
+		   <if test='pkg_name != null and pkg_name != "" '>
+		   AND PKG_NAME				= #{pkg_name}
+		   </if>
+		   <if test='group_name != null and group_name != "" '>
+		   AND GROUP_NAME			= #{group_name}
+		   </if>
+	</select>
+
+	<select id="listScheduler" resultType="com.ntels.avocado.domain.atom.general.scheduler.Scheduler">
+	/* [SchedulerMapper.xml].[listScheduler].Update(20160404) */
+		SELECT J.JOB_NAME
+		     , J.GROUP_NAME
+		     , P.PROC_NAME
+		     , P.SVC_NO
+		     , J.NODE_TYPE
+		     , J.FAIL_CONT_YN
+		     , J.RUN_YN
+		     , J.DESCRIPTION
+		  FROM TAT_BATCH_JOB		J
+		     , TAT_PROCESS			P
+         WHERE 1=1
+           AND J.GROUP_NAME			= #{group_name, jdbcType=VARCHAR}
+           AND J.PROC_NO			= P.PROC_NO
+	</select>
+     
+	<select id="listSchedulerFlow" resultType="com.ntels.avocado.domain.atom.general.scheduler.SchedulerFlow">
+	/* [SchedulerMapper.xml].[listSchedulerFlow].Update(20140619) */
+		SELECT J1.PKG_NAME
+		     , J1.GROUP_NAME
+		     , F.JOB_NAME
+		     , F.NEXT_JOB_NAME
+		     , F.EXIT_CD
+		     , F.LINE_ID
+		  FROM TAT_BATCH_FLOW			F
+		     , TAT_BATCH_JOB			J1
+		     , TAT_BATCH_JOB			J2
+		 WHERE 1=1
+		   AND J1.PKG_NAME				= #{pkg_name, jdbcType=VARCHAR}
+		   AND J1.GROUP_NAME			= #{group_name, jdbcType=VARCHAR}
+		   <if test='job_name != null and job_name != "" '>
+		   AND J1.JOB_NAME				= #{job_name, jdbcType=VARCHAR}
+		   </if>
+		   AND J1.PKG_NAME				= J2.PKG_NAME
+		   AND F.JOB_NAME				= J1.JOB_NAME
+		   AND F.NEXT_JOB_NAME			= J2.JOB_NAME
+    </select>
+    
+    <select id="listApplication" resultType="com.ntels.avocado.domain.atom.general.scheduler.Application">
+    /* [BatchMapper.xml].[listApplication].Update(20140619) */
+	    SELECT 
+	    	'${system_id}' system_id,
+	    	package_id,
+	    	application_id,
+	    	app_name,
+	    	app_location,
+	    	app_version,
+	    	app_type,
+	    	component_type,
+	    	app_menu_no,
+	    	remark
+		FROM 
+			T_NFW_APPLICATION
+		WHERE  
+			package_id = #{package_id, jdbcType=VARCHAR}	
+		AND app_type = 'B'
+		ORDER BY 
+			application_id
+    </select>
+    
+    <select id="listPluginProperties" resultType="com.ntels.avocado.domain.atom.general.scheduler.PluginProperties">
+    /* [SchedulerMapper.xml].[listPluginProperties].Update(20140619) */
+    	SELECT
+    		'${package.system_id}' system_id,
+    		A.alias,
+    		A.type_code,
+    		A.disp_order,
+    		A.type_name,
+    		A.group_flag,
+    		A.app_type,
+    		A.comm_proc_flag,
+    		A.use_flag    	      
+  		FROM 
+  			T_NFW_PLUGIN_PROPERTIES A,
+            T_NFW_PACKAGE B
+		WHERE  
+			B.package_id = '${package.package_id}'	
+		AND A.alias = B.alias
+		AND A.use_flag = 'Y'
+		AND A.app_type = '${pluginProperties.app_type}'
+		ORDER BY 
+			disp_order     
+    </select>
+    
+	<select id="getSchedulerGroup" resultType="com.ntels.avocado.domain.atom.general.scheduler.SchedulerGroup">
+	/* [BatchMapper.xml].[getBatchGroup].Update(20140619) */
+		SELECT GROUP_NAME
+		     , DATE_FORMAT(CREATE_DATE, (SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{language}))
+		     							CREATE_DATE
+		     , DATE_FORMAT(START_DATE, (SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{language}))
+		     							START_DATE
+		     , DATE_FORMAT(EXPIRE_DATE, (SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{language}))
+		     							EXPIRE_DATE
+		     , DATE_FORMAT(EXPIRE_DATE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{language}))
+		     							EXPIRE_DT
+		     , DATE_FORMAT(EXPIRE_DATE, '%H:%i')
+		     							EXPIRE_TM
+		     , SCHEDULE_CYCLE_TYPE
+		     , SCHEDULE_CYCLE
+		     , USER_ID
+		     , DESCRIPTION
+		     , PKG_NAME
+		     , USE_YN
+		     , (SELECT CODE_NAME 
+		          FROM TAT_COMMON_CODE
+		         WHERE 1=1
+		           AND USE_YN = DETAIL_CD
+		           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_GROUP_CODE_YN"/>) AS USE_YN_NM
+		     , (SELECT CODE_NAME 
+		          FROM TAT_COMMON_CODE
+		         WHERE 1=1
+		           AND SCHEDULE_CYCLE_TYPE 	= DETAIL_CD
+		           AND GROUP_CD 		= <include refid="com.ntels.avocado.dao.common.CodeDefine.BATCH_GROUP_SCHEDULE_CYCLE_TYPE"/>) 
+		           						SCHEDULE_CYCLE_TYPE_NM
+		  FROM TAT_BATCH_GROUP
+		 WHERE 1=1
+		   AND PKG_NAME					= #{pkg_name, jdbcType=VARCHAR}
+		   AND GROUP_NAME				= #{group_name, jdbcType=VARCHAR}
+	</select>       
+    
+	<select id="getScheduler" resultType="com.ntels.avocado.domain.atom.general.scheduler.Scheduler">
+	/* [SchedulerMapper.xml].[getScheduler].Update(20140619) */
+		SELECT J.JOB_NAME
+		     , J.GROUP_NAME
+		     , J.NODE_NO
+		     , P.SVC_NO
+		     , J.FAIL_CONT_YN
+		     , J.RUN_YN
+		     , J.DESCRIPTION
+		     , J.IMAGE_NO
+		     , J.PKG_NAME
+		     , J.NODE_TYPE
+		     , P.PROC_NAME
+		  FROM TAT_BATCH_JOB		J
+		     , TAT_PROCESS			P
+		 WHERE 1=1
+		   AND J.PKG_NAME			= #{pkg_name, jdbcType=VARCHAR}
+		   AND J.GROUP_NAME			= #{group_name, jdbcType=VARCHAR}
+		   AND J.JOB_NAME			= #{job_name, jdbcType=VARCHAR}
+           AND J.PROC_NO			= P.PROC_NO
+	</select>
+	
+	<select id="getSchedulerFlow" resultType="com.ntels.avocado.domain.atom.general.scheduler.SchedulerFlow">
+	/* [BatchMapper.xml].[getBatchFlow].Update(20140619) */
+		SELECT J.PKG_NAME
+		     , J.GROUP_NAME
+		     , F.JOB_NAME
+		     , F.NEXT_JOB_NAME
+		     , F.EXIT_CD
+		     , F.LINE_ID
+		  FROM TAT_BATCH_FLOW		F
+		     , TAT_BATCH_JOB		J
+		 WHERE 1=1
+		   AND F.JOB_NAME			= #{job_name, jdbcType=VARCHAR}
+		   AND F.NEXT_JOB_NAME		= #{next_job_name, jdbcType=VARCHAR}
+		   AND F.JOB_NAME			= J.JOB_NAME
+		   AND J.GROUP_NAME			= #{group_name, jdbcType=VARCHAR}
+		   AND J.PKG_NAME			= #{pkg_name, jdbcType=VARCHAR}			
+    </select>	    
+
+    <update id="insertSchedulerGroup" parameterType="com.ntels.avocado.domain.atom.general.scheduler.SchedulerGroup">
+    /* [SchedulerMapper.xml].[insertSchedulerGroup].Update(20140619) */
+    	INSERT INTO TAT_BATCH_GROUP (
+			GROUP_NAME
+			, PKG_NAME
+			, CREATE_DATE
+			<if test='start_date != null and start_date != "" '>
+				, START_DATE
+			</if>
+			<if test='schedule_cycle_type != null and schedule_cycle_type != "" '>
+				, SCHEDULE_CYCLE_TYPE
+			</if>
+			<if test='schedule_cycle != null and schedule_cycle != "" '>
+				, SCHEDULE_CYCLE
+			</if>
+			<if test='expire_date != null and expire_date != "" '>
+				, EXPIRE_DATE
+			</if>
+			<if test='user_id != null and user_id != "" '>
+				, USER_ID
+			</if>
+			<if test='description != null and description != "" '>
+				, DESCRIPTION
+			</if>
+			<if test='use_yn != null and use_yn != "" '>
+				, USE_YN
+			</if>
+		)
+		VALUES (
+			#{group_name, jdbcType=VARCHAR}
+			, #{pkg_name, jdbcType=VARCHAR}
+			, NOW()
+			<if test='start_date != null and start_date != "" '>
+				, STR_TO_DATE( #{start_date, jdbcType=VARCHAR}, (SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{language}))
+			</if>
+			<if test='schedule_cycle_type != null and schedule_cycle_type != "" '>
+				, #{schedule_cycle_type, jdbcType=VARCHAR}
+			</if>
+			<if test='schedule_cycle != null and schedule_cycle != "" '>
+				, #{schedule_cycle, jdbcType=VARCHAR}
+			</if>
+			<if test='expire_date != null and expire_date != "" '>
+				, STR_TO_DATE( #{expire_date, jdbcType=VARCHAR}, (SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{language}))
+			</if>
+			<if test='user_id != null and user_id != "" '>
+				, #{user_id, jdbcType=VARCHAR}
+			</if>
+			<if test='description != null and description != "" '>
+				, #{description, jdbcType=VARCHAR}
+			</if>
+			<if test='use_yn != null and use_yn != "" '>
+				, #{use_yn, jdbcType=VARCHAR}
+			</if>
+		)   		
+    </update>
+    
+    <update id="insertScheduler" parameterType="com.ntels.avocado.domain.atom.general.scheduler.Scheduler">
+    /* [SchedulerMapper.xml].[insertScheduler].Update(20140619) */
+    	INSERT INTO TAT_BATCH_JOB (
+			  JOB_NAME
+			, GROUP_NAME
+			, NODE_TYPE
+			, PKG_NAME
+			<if test='node_no != null and node_no != "" '>
+				, NODE_NO
+			</if>
+			<if test='fail_cont_yn != null and fail_cont_yn != "" '>
+				, FAIL_CONT_YN
+			</if>
+			<if test='run_yn != null and run_yn != "" '>
+				, RUN_YN
+			</if>
+			<if test='image_no != null and image_no != "" '>
+				, IMAGE_NO
+			</if>
+			<if test='proc_no != null and proc_no != "" '>
+				, PROC_NO
+			</if>
+			<if test='description != null and description != "" '>
+				, DESCRIPTION
+			</if>
+		)
+		VALUES (
+			#{job_name, jdbcType=VARCHAR}
+			, #{group_name, jdbcType=VARCHAR}
+			, #{node_type, jdbcType=VARCHAR}
+			, #{pkg_name, jdbcType=VARCHAR}
+			<if test='node_no != null and node_no != "" '>
+				, #{node_no, jdbcType=VARCHAR}
+			</if>
+			<if test='fail_cont_yn != null and fail_cont_yn != "" '>
+				, #{fail_cont_yn, jdbcType=VARCHAR}
+			</if>
+			<if test='run_yn != null and run_yn != "" '>
+				, #{run_yn, jdbcType=VARCHAR}
+			</if>
+			<if test='image_no != null and image_no != "" '>
+				, #{image_no, jdbcType=VARCHAR}
+			</if>
+			<if test='proc_no != null and proc_no != "" '>
+				, #{proc_no, jdbcType=VARCHAR}
+			</if>
+			<if test='description != null and description != "" '>
+				, #{description, jdbcType=VARCHAR}
+			</if>
+		)   	    		
+    </update>
+    
+    <insert id="insertSchedulerFlow" parameterType="com.ntels.avocado.domain.atom.general.scheduler.SchedulerFlow">
+    /* [SchedulerMapper.xml].[insertBatchFlow].Update(20140619) */
+    	INSERT INTO TAT_BATCH_FLOW (
+			EXIT_CD
+			, JOB_NAME
+			<if test='next_job_name != null and next_job_name != "" '>
+				, NEXT_JOB_NAME
+			</if>
+			<if test='line_id != null and line_id != "" '>
+				, LINE_ID
+			</if>
+		)
+		VALUES (
+			#{exit_cd, jdbcType=VARCHAR}
+			, #{job_name, jdbcType=VARCHAR}
+			<if test='next_job_name != null and next_job_name != "" '>
+				, #{next_job_name, jdbcType=VARCHAR}
+			</if>
+			<if test='line_id != null and line_id != "" '>
+				, #{line_id, jdbcType=VARCHAR}
+			</if>
+		)       
+    </insert>
+    
+    <update id="updateSchedulerGroup" parameterType="com.ntels.avocado.domain.atom.general.scheduler.SchedulerGroup">
+    /* [SchedulerMapper.xml].[updateBatchGroup].Update(20140619) */
+    /* , DATE_FORMAT(CREATE_DATE, ) */
+    	UPDATE TAT_BATCH_GROUP
+    	   SET GROUP_NAME			= #{group_name, jdbcType=VARCHAR}
+    	     , PKG_NAME				= #{pkg_name, jdbcType=VARCHAR}
+    	     <if test='start_date != null and start_date != "" '>
+				, START_DATE		= STR_TO_DATE( #{start_date, jdbcType=VARCHAR}, '%Y%m%d')
+			</if>
+			<if test='schedule_cycle_type != null and schedule_cycle_type != "" '>
+				, SCHEDULE_CYCLE_TYPE = #{schedule_cycle_type, jdbcType=VARCHAR}
+			</if>
+			<if test='schedule_cycle != null '>
+				, SCHEDULE_CYCLE 	= #{schedule_cycle, jdbcType=VARCHAR}
+			</if>
+			<if test='expire_date != null and expire_date != "" '>
+				, EXPIRE_DATE		= STR_TO_DATE( #{expire_date, jdbcType=VARCHAR}, (SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{language}))
+			</if>
+			<if test='user_id != null and user_id != "" '>
+				, USER_ID			= #{user_id, jdbcType=VARCHAR}
+			</if>
+			<if test='description != null and description != "" '>
+				, DESCRIPTION		= #{description, jdbcType=VARCHAR}
+			</if>
+			<if test='use_yn != null and use_yn != "" '>
+				, USE_YN			= #{use_yn, jdbcType=VARCHAR}
+			</if>
+    	 WHERE 1=1
+    	   AND GROUP_NAME			= #{group_name, jdbcType=VARCHAR}
+    	   AND PKG_NAME				= #{pkg_name, jdbcType=VARCHAR}
+    </update>    
+    
+    <update id="updateScheduler" parameterType="com.ntels.avocado.domain.atom.general.scheduler.Scheduler">
+    /* [SchedulerMapper.xml].[updateBatch].Update(20140619) */
+    	UPDATE TAT_BATCH_JOB
+    	   SET JOB_NAME				= #{job_name, jdbcType=VARCHAR}
+    	     , GROUP_NAME			= #{group_name, jdbcType=VARCHAR}
+			<if test='node_type != null and node_type != "" '>
+				, NODE_TYPE		= #{node_type, jdbcType=VARCHAR}
+			</if>
+			<if test='pkg_name != null and pkg_name != "" '>
+				, PKG_NAME			= #{pkg_name, jdbcType=VARCHAR}
+			</if>
+			<if test='node_no != null and node_no != "" '>
+				, NODE_NO			= #{node_no, jdbcType=VARCHAR}
+			</if>
+			<if test='fail_cont_yn != null and fail_cont_yn != "" '>
+				, FAIL_CONT_YN		= #{fail_cont_yn, jdbcType=VARCHAR}
+			</if>
+			<if test='run_yn != null and run_yn != "" '>
+				, RUN_YN			= #{run_yn, jdbcType=VARCHAR}
+			</if>
+			<if test='image_no != null and image_no != "" '>
+				, IMAGE_NO			= #{image_no, jdbcType=VARCHAR}
+			</if>
+			<if test='proc_no != null and proc_no != "" '>
+				, PROC_NO			= #{proc_no, jdbcType=VARCHAR}
+			</if>
+			<if test='description != null and description != "" '>
+				, DESCRIPTION 		= #{description, jdbcType=VARCHAR}
+			</if>
+    	 WHERE 1=1 
+    	   AND JOB_NAME				= #{job_name, jdbcType=VARCHAR}
+    	   AND GROUP_NAME			= #{group_name, jdbcType=VARCHAR}
+    </update>    
+    
+    <update id="updateSchedulerName" parameterType="com.ntels.avocado.domain.atom.general.scheduler.Scheduler">
+    /* [SchedulerMapper.xml].[updateBatchName].Update(20140619) */
+    	UPDATE TAT_BATCH_JOB
+    	   SET JOB_NAME				= #{job_name, jdbcType=VARCHAR}
+    	     , GROUP_NAME			= #{group_name, jdbcType=VARCHAR}
+			<if test='node_type != null and node_type != "" '>
+				, NODE_TYPE			= #{node_type, jdbcType=VARCHAR}
+			</if>
+			<if test='pkg_name != null and pkg_name != "" '>
+				, PKG_NAME			= #{pkg_name, jdbcType=VARCHAR}
+			</if>
+			<if test='node_no != null and node_no != "" '>
+				, NODE_NO			= #{node_no, jdbcType=VARCHAR}
+			</if>
+			<if test='fail_cont_yn != null and fail_cont_yn != "" '>
+				, FAIL_CONT_YN		= #{fail_cont_yn, jdbcType=VARCHAR}
+			</if>
+			<if test='run_yn != null and run_yn != "" '>
+				, RUN_YN			= #{run_yn, jdbcType=VARCHAR}
+			</if>
+			<if test='image_no != null and image_no != "" '>
+				, IMAGE_NO			= #{image_no, jdbcType=VARCHAR}
+			</if>
+			<if test='proc_no != null and proc_no != "" '>
+				, PROC_NO			= #{proc_no, jdbcType=VARCHAR}
+			</if>
+			<if test='description != null and description != "" '>
+				, DESCRIPTION 		= #{description, jdbcType=VARCHAR}
+			</if>
+    	 WHERE 1=1 
+    	   AND JOB_NAME				= #{job_name, jdbcType=VARCHAR}
+    	   AND GROUP_NAME			= #{group_name, jdbcType=VARCHAR}
+    </update>
+    
+    <update id="updateSchedulerPosition" parameterType="com.ntels.avocado.domain.atom.general.scheduler.Scheduler">
+    /* [SchedulerMapper.xml].[updateBatchPosition].Update(20140619) */
+    	UPDATE TAT_BATCH_JOB
+    	   SET JOB_NAME				= #{job_name, jdbcType=VARCHAR}
+    	     , GROUP_NAME			= #{group_name, jdbcType=VARCHAR}
+			<if test='node_type != null and node_type != "" '>
+				, NODE_TYPE		= #{node_type, jdbcType=VARCHAR}
+			</if>
+			<if test='pkg_name != null and pkg_name != "" '>
+				, PKG_NAME			= #{pkg_name, jdbcType=VARCHAR}
+			</if>
+			<if test='node_no != null and node_no != "" '>
+				, NODE_NO			= #{node_no, jdbcType=VARCHAR}
+			</if>
+			<if test='fail_cont_yn != null and fail_cont_yn != "" '>
+				, FAIL_CONT_YN		= #{fail_cont_yn, jdbcType=VARCHAR}
+			</if>
+			<if test='run_yn != null and run_yn != "" '>
+				, RUN_YN			= #{run_yn, jdbcType=VARCHAR}
+			</if>
+			<if test='image_no != null and image_no != "" '>
+				, IMAGE_NO			= #{image_no, jdbcType=VARCHAR}
+			</if>
+			<if test='proc_no != null and proc_no != "" '>
+				, PROC_NO			= #{proc_no, jdbcType=VARCHAR}
+			</if>
+			<if test='description != null and description != "" '>
+				, DESCRIPTION 		= #{description, jdbcType=VARCHAR}
+			</if>
+    	 WHERE 1=1 
+    	   AND JOB_NAME				= #{job_name, jdbcType=VARCHAR}
+    	   AND GROUP_NAME			= #{group_name, jdbcType=VARCHAR}
+    </update> 
+    
+    <update id="updateSchedulerFlow" parameterType="com.ntels.avocado.domain.atom.general.scheduler.SchedulerFlow">
+    /* [SchedulerMapper.xml].[updateBatchFlow].Update(20140619) */
+    	UPDATE TAT_BATCH_FLOW
+    	   SET EXIT_CD				= #{exit_cd, jdbcType=VARCHAR}
+    	     , JOB_NAME				= #{job_name, jdbcType=VARCHAR}
+			<if test='next_job_name != null and next_job_name != "" '>
+				, NEXT_JOB_NAME		= #{next_job_name, jdbcType=VARCHAR}
+			</if>
+			<if test='line_id != null and line_id != "" '>
+				, LINE_ID			= #{line_id, jdbcType=VARCHAR}
+			</if>
+    	 WHERE 1=1
+    	   AND EXIT_CD				= #{exit_cd, jdbcType=VARCHAR}
+    	   AND JOB_NAME				= #{job_name, jdbcType=VARCHAR}
+    </update>       
+    
+    <delete id="deleteSchedulerGroup" parameterType="com.ntels.avocado.domain.atom.general.scheduler.SchedulerGroup">
+    /* [SchedulerMapper.xml].[deleteBatchGroup].Update(20140619) */
+    	DELETE FROM TAT_BATCH_GROUP
+    	WHERE GROUP_NAME 	= #{group_name, jdbcType=VARCHAR}
+		  AND PKG_NAME 		= #{pkg_name, jdbcType=VARCHAR}
+    </delete>      
+    
+    <delete id="deleteScheduler" parameterType="com.ntels.avocado.domain.atom.general.scheduler.Scheduler">
+    /* [SchedulerMapper.xml].[deleteBatch].Update(20140619) */
+    	DELETE FROM TAT_BATCH_JOB
+    	WHERE 1=1
+		<if test='(job_name == null or job_name == "") and ((pkg_name == null or pkg_name == "") or (group_name == null or group_name == "") ) '>
+		AND 1<![CDATA[<>]]>1
+		</if>
+		<if test='job_name != null and job_name != "" '>
+		AND JOB_NAME = #{job_name, jdbcType=VARCHAR} 
+		</if>
+		<if test='(pkg_name != null and pkg_name != "") and (group_name != null and group_name != "") '>
+		AND PKG_NAME = #{pkg_name, jdbcType=VARCHAR} 
+		AND GROUP_NAME = #{group_name, jdbcType=VARCHAR} 
+		</if>
+    </delete>
+    
+	<delete id="deleteSchedulerFlow" parameterType="com.ntels.avocado.domain.atom.general.scheduler.SchedulerFlow">
+	/* [SchedulerMapper.xml].[deleteBatchFlow].Update(20140619) */
+    	DELETE FROM TAT_BATCH_FLOW
+		WHERE 1=1
+		<if test='(
+					(exit_cd == null or exit_cd == "") and (job_name == null or job_name == "") 
+					and
+					(pkg_name == null or pkg_name == "") and (group_name == null or group_name == "")
+				) '>
+		AND 1<![CDATA[<>]]>1
+		</if>
+		<if test='(exit_cd != null and exit_cd != "") and (job_name != null and job_name != "") '>
+		AND EXIT_CD = #{exit_cd, jdbcType=VARCHAR}
+		AND JOB_NAME = #{job_name, jdbcType=VARCHAR}
+		</if>
+		<if test='(pkg_name != null and pkg_name != "") and (group_name != null and group_name != "") '>
+		AND JOB_NAME IN (SELECT JOB_NAME 
+                             FROM TAT_BATCH_JOB
+                            WHERE GROUP_NAME 	= #{group_name, jdbcType=VARCHAR}
+		  					  AND PKG_NAME 		= #{pkg_name, jdbcType=VARCHAR}
+						)
+		</if>
+    </delete>
+    
+    
+    
+    
+    
+    
+    <!-- Backup -->
+	<select id="listSchedulerGroup_backup" resultType="com.ntels.avocado.domain.atom.general.scheduler.SchedulerGroup">
+	 /* [SchedulerMapper.xml].[listSchedulerGroup].Update(20140619) */
+		SELECT
+			'${system_id}' system_id,
+			package_id,
+			batch_group_id,
+			batch_group_name,
+			register_date,
+			apply_date,
+			expire_date,
+			schedule_cycle_type,
+			schedule_cycle,
+			holiday_exception_yn,
+			last_schedule_date,
+			remark,
+			user_id
+		FROM 
+			T_NFW_BATCH_GROUP
+		WHERE
+			package_id = #{package_id, jdbcType=VARCHAR}
+	</select>
+
+	<select id="listBatch_backup" resultType="com.ntels.avocado.domain.atom.general.scheduler.Scheduler">
+	/* [SchedulerMapper.xml].[listBatch].Update(20140619) */
+		SELECT
+			'${system_id}' system_id,
+			package_id,
+			batch_group_id,
+			batch_job_id,
+			batch_job_name,
+			app_package_id,
+			application_id,
+			execute_argument,
+			first_process_yn,
+			abnormal_stop_yn,	
+			image_x,
+			image_y,
+			remark,
+			user_id,
+			lms_log_yn,
+			max_process,
+			component_type
+		FROM 
+			T_NFW_BATCH_JOB
+		WHERE
+			package_id = #{package_id, jdbcType=VARCHAR}
+		AND batch_group_id = #{batch_group_id, jdbcType=VARCHAR}
+	</select>
+     
+	<select id="listBatchFlow_backup" resultType="com.ntels.avocado.domain.atom.general.scheduler.SchedulerFlow">
+	/* [SchedulerMapper.xml].[listSchedulerFlow].Update(20140619) */
+		SELECT
+			'${system_id}' system_id,
+			F.package_id,
+			F.batch_group_id,
+			F.batch_job_id,
+			F.exit_value,
+			F.next_job_id,
+			F.remark,
+			F.user_id
+		FROM 
+			T_NFW_BATCH_FLOW F,
+			T_NFW_BATCH_JOB S,
+			T_NFW_BATCH_JOB E
+		WHERE
+			F.package_id = #{package_id, jdbcType=VARCHAR}
+		AND F.batch_group_id = #{batch_group_id, jdbcType=VARCHAR}
+		AND F.package_id = S.package_id
+		AND F.batch_group_id = S.batch_group_id
+		AND F.batch_job_id = S.batch_job_id
+		AND F.package_id = E.package_id
+		AND F.batch_group_id = E.batch_group_id
+		AND F.next_job_id = E.batch_job_id
+    </select>
+    
+    <select id="listApplication_backup" resultType="com.ntels.avocado.domain.atom.general.scheduler.Application">
+    /* [BatchMapper.xml].[listApplication].Update(20140619) */
+	    SELECT 
+	    	'${system_id}' system_id,
+	    	package_id,
+	    	application_id,
+	    	app_name,
+	    	app_location,
+	    	app_version,
+	    	app_type,
+	    	component_type,
+	    	app_menu_no,
+	    	remark
+		FROM 
+			T_NFW_APPLICATION
+		WHERE  
+			package_id = #{package_id, jdbcType=VARCHAR}	
+		AND app_type = 'B'
+		ORDER BY 
+			application_id
+    </select>
+    
+    <select id="listPluginProperties_backup" resultType="com.ntels.avocado.domain.atom.general.scheduler.PluginProperties">
+    /* [SchedulerMapper.xml].[listPluginProperties].Update(20140619) */
+    	SELECT
+    		'${package.system_id}' system_id,
+    		A.alias,
+    		A.type_code,
+    		A.disp_order,
+    		A.type_name,
+    		A.group_flag,
+    		A.app_type,
+    		A.comm_proc_flag,
+    		A.use_flag    	      
+  		FROM 
+  			T_NFW_PLUGIN_PROPERTIES A,
+            T_NFW_PACKAGE B
+		WHERE  
+			B.package_id = '${package.package_id}'	
+		AND A.alias = B.alias
+		AND A.use_flag = 'Y'
+		AND A.app_type = '${pluginProperties.app_type}'
+		ORDER BY 
+			disp_order     
+    </select>
+    
+	<select id="getSchedulerGroup_backup" resultType="com.ntels.avocado.domain.atom.general.scheduler.SchedulerGroup">
+	/* [BatchMapper.xml].[getBatchGroup].Update(20140619) */
+		SELECT
+			'${system_id}' system_id,
+			package_id,
+			batch_group_id,
+			batch_group_name,
+			register_date,
+			apply_date,
+			expire_date,
+			schedule_cycle_type,
+			schedule_cycle,
+			holiday_exception_yn,
+			last_schedule_date,
+			remark,
+			user_id
+		FROM 
+			T_NFW_BATCH_GROUP
+		WHERE
+			package_id = #{package_id, jdbcType=VARCHAR}
+		AND batch_group_id = #{batch_group_id, jdbcType=VARCHAR}
+	</select>       
+    
+	<select id="getScheduler_backup" resultType="com.ntels.avocado.domain.atom.general.scheduler.Scheduler">
+	/* [SchedulerMapper.xml].[getBatch].Update(20140619) */
+		SELECT
+			'${system_id}' system_id,
+			package_id,
+			batch_group_id,
+			batch_job_id,
+			batch_job_name,
+			app_package_id,
+			application_id,
+			execute_argument,
+			first_process_yn,
+			abnormal_stop_yn,	
+			image_x,
+			image_y,
+			remark,
+			user_id,
+			lms_log_yn,
+			max_process,
+			component_type
+		FROM 
+			T_NFW_BATCH_JOB
+		WHERE
+			package_id = #{package_id, jdbcType=VARCHAR}
+		AND batch_group_id = #{batch_group_id, jdbcType=VARCHAR}
+		AND batch_job_id = #{batch_job_id, jdbcType=VARCHAR}
+	</select>
+	
+	<select id="getSchedulerFlow_backup" resultType="com.ntels.avocado.domain.atom.general.scheduler.SchedulerFlow">
+	/* [BatchMapper.xml].[getBatchFlow].Update(20140619) */
+		SELECT
+			'${system_id}' system_id,
+			package_id,
+			batch_group_id,
+			batch_job_id,
+			exit_value,
+			next_job_id,
+			remark,
+			user_id
+		FROM 
+			T_NFW_BATCH_FLOW
+		WHERE
+			package_id = #{package_id, jdbcType=VARCHAR}
+		AND batch_group_id = #{batch_group_id, jdbcType=VARCHAR}
+		AND batch_job_id = #{batch_job_id, jdbcType=VARCHAR} 
+		AND next_job_id = #{next_job_id, jdbcType=VARCHAR} 					
+    </select>	    
+
+    <insert id="insertSchedulerGroup_backup" parameterType="com.ntels.avocado.domain.atom.general.scheduler.SchedulerGroup">
+    /* [SchedulerMapper.xml].[insertBatchGroup].Update(20140619) */
+    	<selectKey keyProperty="new_batch_group_id" resultType="String" order="BEFORE">
+			SELECT  LPAD(IFNULL(MAX(batch_group_id), 0)+1, 6, 0) AS new_batch_group_id
+			FROM  T_NFW_BATCH_GROUP
+			WHERE package_id = #{package_id, jdbcType=VARCHAR}
+   		</selectKey>
+   		<![CDATA[
+    	INSERT INTO T_NFW_BATCH_GROUP
+    		(package_id, batch_group_id, batch_group_name, register_date, apply_date, expire_date, 
+    		schedule_cycle_type, schedule_cycle, holiday_exception_yn, last_schedule_date, remark, user_id)
+    	VALUES
+    		(#{package_id, jdbcType=VARCHAR}, #{new_batch_group_id, jdbcType=VARCHAR}, #{batch_group_name, jdbcType=VARCHAR}, DATE_FORMAT( NOW() , '%Y%m%d'), #{apply_date, jdbcType=VARCHAR}, #{expire_date, jdbcType=VARCHAR}, 
+    		#{schedule_cycle_type, jdbcType=VARCHAR}, #{schedule_cycle, jdbcType=VARCHAR}, #{holiday_exception_yn, jdbcType=VARCHAR}, #{last_schedule_date, jdbcType=VARCHAR}, #{remark, jdbcType=VARCHAR}, #{user_id, jdbcType=VARCHAR})
+    	]]>    		
+    </insert>
+    
+    <insert id="insertScheduler_backup" parameterType="com.ntels.avocado.domain.atom.general.scheduler.Scheduler">
+    /* [SchedulerMapper.xml].[insertBatch].Update(20140619) */
+    	<selectKey keyProperty="new_batch_job_id" resultType="String" order="BEFORE">
+			SELECT  LPAD(IFNULL(MAX(batch_job_id), 0)+1, 6, 0) AS new_batch_job_id
+			FROM  T_NFW_BATCH_JOB
+			WHERE package_id = #{package_id, jdbcType=VARCHAR}
+			AND batch_group_id = #{batch_group_id, jdbcType=VARCHAR}
+   		</selectKey>
+    	INSERT INTO T_NFW_BATCH_JOB
+    		(package_id, batch_group_id, batch_job_id, batch_job_name, app_package_id, application_id,
+    		execute_argument, first_process_yn, abnormal_stop_yn, image_x, image_y, remark, user_id,
+    		lms_log_yn, max_process, component_type)
+    	VALUES
+    		(#{package_id, jdbcType=VARCHAR}, #{batch_group_id, jdbcType=VARCHAR}, #{new_batch_job_id, jdbcType=VARCHAR}, #{batch_job_name, jdbcType=VARCHAR}, #{app_package_id, jdbcType=VARCHAR}, #{application_id, jdbcType=VARCHAR}, 
+    		#{execute_argument, jdbcType=VARCHAR}, #{first_process_yn, jdbcType=VARCHAR}, #{abnormal_stop_yn, jdbcType=VARCHAR}, #{image_x, jdbcType=VARCHAR}, #{image_y, jdbcType=VARCHAR}, #{remark, jdbcType=VARCHAR}, #{user_id, jdbcType=VARCHAR},
+    		#{lms_log_yn, jdbcType=VARCHAR}, #{max_process, jdbcType=VARCHAR}, #{component_type, jdbcType=VARCHAR})    		
+    </insert>
+    
+    <insert id="insertSchedulerFlow_backup" parameterType="com.ntels.avocado.domain.atom.general.scheduler.SchedulerFlow">
+    /* [SchedulerMapper.xml].[insertBatchFlow].Update(20140619) */
+    	INSERT INTO T_NFW_BATCH_FLOW
+    		(package_id, batch_group_id, batch_job_id, exit_value, next_job_id, remark, user_id)
+    	VALUES
+    		(#{package_id, jdbcType=VARCHAR}, #{batch_group_id, jdbcType=VARCHAR}, #{batch_job_id, jdbcType=VARCHAR}, #{exit_value, jdbcType=VARCHAR}, #{next_job_id, jdbcType=VARCHAR}, #{remark, jdbcType=VARCHAR}, #{user_id, jdbcType=VARCHAR})    
+    </insert>
+    
+    <update id="updateSchedulerGroup_backup" parameterType="com.ntels.avocado.domain.atom.general.scheduler.SchedulerGroup">
+    /* [SchedulerMapper.xml].[updateBatchGroup].Update(20140619) */
+    	UPDATE T_NFW_BATCH_GROUP
+    		SET batch_group_name = #{batch_group_name, jdbcType=VARCHAR},
+    		      apply_date = #{apply_date, jdbcType=VARCHAR},
+    		      expire_date = #{expire_date, jdbcType=VARCHAR},
+    		      holiday_exception_yn = #{holiday_exception_yn, jdbcType=VARCHAR},
+    		      schedule_cycle_type = #{schedule_cycle_type, jdbcType=VARCHAR},
+    		      schedule_cycle = #{schedule_cycle, jdbcType=VARCHAR},
+	   		      remark = #{remark, jdbcType=VARCHAR}
+    	WHERE 
+			package_id = #{package_id, jdbcType=VARCHAR}
+		AND batch_group_id = #{batch_group_id, jdbcType=VARCHAR}
+    </update>    
+    
+    <update id="updateScheduler_backup" parameterType="com.ntels.avocado.domain.atom.general.scheduler.Scheduler">
+    /* [SchedulerMapper.xml].[updateBatch].Update(20140619) */
+    	UPDATE T_NFW_BATCH_JOB
+    		SET batch_job_name = #{batch_job_name, jdbcType=VARCHAR},
+    		      component_type = #{component_type, jdbcType=VARCHAR},
+    		      app_package_id = #{app_package_id, jdbcType=VARCHAR},
+    		      application_id = #{application_id, jdbcType=VARCHAR},
+    		      abnormal_stop_yn = #{abnormal_stop_yn, jdbcType=VARCHAR},
+    		      execute_argument = #{execute_argument, jdbcType=VARCHAR},
+    		      remark = #{remark, jdbcType=VARCHAR},
+    		      lms_log_yn = #{lms_log_yn, jdbcType=VARCHAR}
+    	WHERE 
+			package_id = #{package_id, jdbcType=VARCHAR}
+		AND batch_group_id = #{batch_group_id, jdbcType=VARCHAR}
+		AND batch_job_id = #{batch_job_id, jdbcType=VARCHAR}
+    </update>    
+    
+    <update id="updateSchedulerName_backup" parameterType="com.ntels.avocado.domain.atom.general.scheduler.Scheduler">
+    /* [SchedulerMapper.xml].[updateBatchName].Update(20140619) */
+    	UPDATE T_NFW_BATCH_JOB
+    		SET batch_job_name = #{batch_job_name, jdbcType=VARCHAR}
+    	WHERE 
+			package_id = #{package_id, jdbcType=VARCHAR}
+		AND batch_group_id = #{batch_group_id, jdbcType=VARCHAR}
+		AND batch_job_id = #{batch_job_id, jdbcType=VARCHAR}
+    </update>
+    
+    <update id="updateSchedulerPosition_backup" parameterType="com.ntels.avocado.domain.atom.general.scheduler.Scheduler">
+    /* [SchedulerMapper.xml].[updateBatchPosition].Update(20140619) */
+    	UPDATE T_NFW_BATCH_JOB
+    		SET image_x = #{image_x, jdbcType=VARCHAR},
+    		      image_y = #{image_y, jdbcType=VARCHAR}
+    	WHERE 
+			package_id = #{package_id, jdbcType=VARCHAR}
+		AND batch_group_id = #{batch_group_id, jdbcType=VARCHAR}
+		AND batch_job_id = #{batch_job_id, jdbcType=VARCHAR}
+    </update> 
+    
+    <update id="updateSchedulerFlow_backup" parameterType="com.ntels.avocado.domain.atom.general.scheduler.SchedulerFlow">
+    /* [SchedulerMapper.xml].[updateBatchFlow].Update(20140619) */
+    	UPDATE T_NFW_BATCH_FLOW
+    		SET remark = #{remark, jdbcType=VARCHAR}
+		WHERE
+			package_id = #{package_id, jdbcType=VARCHAR}
+		AND batch_group_id = #{batch_group_id, jdbcType=VARCHAR}
+		AND batch_job_id = #{batch_job_id, jdbcType=VARCHAR} 
+		AND next_job_id = #{next_job_id, jdbcType=VARCHAR} 
+    </update>       
+    
+    <delete id="deleteSchedulerGroup_backup" parameterType="com.ntels.avocado.domain.atom.general.scheduler.SchedulerGroup">
+    /* [SchedulerMapper.xml].[deleteBatchGroup].Update(20140619) */
+    	DELETE FROM T_NFW_BATCH_GROUP
+    	WHERE
+			package_id = #{package_id, jdbcType=VARCHAR}
+		AND batch_group_id = #{batch_group_id, jdbcType=VARCHAR}
+    </delete>      
+    
+    <delete id="deleteScheduler_backup" parameterType="com.ntels.avocado.domain.atom.general.scheduler.Scheduler">
+    /* [SchedulerMapper.xml].[deleteBatch].Update(20140619) */
+    	DELETE FROM T_NFW_BATCH_JOB
+    	WHERE
+			package_id = #{package_id, jdbcType=VARCHAR}
+		AND batch_group_id = #{batch_group_id, jdbcType=VARCHAR}
+		<if test='batch_job_id != null and batch_job_id != "" '>
+		AND batch_job_id = #{batch_job_id, jdbcType=VARCHAR} 
+		</if>
+    </delete>
+    
+	<delete id="deleteSchedulerFlow_backup" parameterType="com.ntels.avocado.domain.atom.general.scheduler.SchedulerFlow">
+	/* [SchedulerMapper.xml].[deleteBatchFlow].Update(20140619) */
+    	DELETE FROM T_NFW_BATCH_FLOW
+		WHERE
+			package_id = #{package_id, jdbcType=VARCHAR}
+		AND batch_group_id = #{batch_group_id, jdbcType=VARCHAR}
+		<if test='batch_job_id != null and batch_job_id != "" '>
+		AND batch_job_id = #{batch_job_id, jdbcType=VARCHAR} 
+		</if>
+		<if test='next_job_id != null and next_job_id != "" '>
+		AND next_job_id = #{next_job_id, jdbcType=VARCHAR} 
+		</if>
+    </delete>
+    
+    
+    
+    
+    
+    
+    
+    
+	<select id="listNodeType" parameterType="com.ntels.avocado.domain.atom.general.scheduler.SchedulerGroup" resultType="com.ntels.avocado.domain.atom.config.processmanager.NodeType">
+		SELECT NODE_TYPE,
+			PKG_NAME
+		FROM TAT_NODE_TYPE
+		WHERE PKG_NAME = #{pkg_name}
+	</select>
+	
+	<select id="listNode" parameterType="com.ntels.avocado.domain.atom.general.scheduler.SchedulerGroup" resultType="com.ntels.avocado.domain.atom.config.networkmanager.Node">
+		SELECT NODE_NO,
+			NODE_NAME
+		FROM TAT_NODE
+		WHERE PKG_NAME = #{pkg_name}
+	</select>
+    
+    <select id="listBatchGroup" resultType="com.ntels.avocado.domain.atom.general.scheduler.SchedulerGroup">
+    	SELECT PKG_NAME
+		     , GROUP_NAME
+		  FROM TAT_BATCH_GROUP
+    </select>
+    
+    <select id="listProc" parameterType="com.ntels.avocado.domain.atom.general.scheduler.SchedulerGroup" resultType="com.ntels.avocado.domain.atom.config.processmanager.Proc">
+		SELECT
+			P.PROC_NO,
+			P.PKG_NAME,
+			P.PROC_NAME,
+			P.NODE_TYPE,
+			P.SVC_NO,
+			P.EXEC_BIN,
+			P.EXEC_ARG,
+			P.EXEC_ENV,
+			P.EXEC_YN,
+			P.START_ORDER,
+			P.STOP_ORDER,
+			P.CPU_BIND_CORE,
+			P.MMR_BIND_NODE,
+			P.USE_YN,
+			P.NORM_STOP_CD,
+			P.RESTA_CNT,
+			P.PROC_TYPE,
+			P.IMAGE_NO
+		FROM TAT_PROCESS P
+		WHERE P.PROC_TYPE = 'B'
+			AND P.PKG_NAME = #{pkg_name}
+	</select>
+    
+    <select id="listBatchJob" resultType="com.ntels.avocado.domain.atom.general.scheduler.Scheduler">
+		SELECT J.PKG_NAME,
+			J.JOB_NAME,
+			J.GROUP_NAME,
+			J.NODE_TYPE,
+			J.FAIL_CONT_YN,
+			J.RUN_YN,
+			J.DESCRIPTION,
+			J.IMAGE_NO,
+			J.JOB_NAME AS JOB_NAME_OLD,
+			J.NODE_NO,
+			I.IMAGE_X,
+			I.IMAGE_Y,
+			I.IMAGE_WIDTH,
+			I.IMAGE_HEIGHT,
+			I.IMAGE_NAME,
+			I.IMAGE_BGCOLOR,
+			I.IMAGE_UUID,
+			P.PROC_NAME
+		  FROM TAT_BATCH_JOB J
+		  LEFT OUTER JOIN TAT_PROCESS P ON P.PROC_NO = J.PROC_NO
+		  LEFT OUTER JOIN TAT_IMAGE I ON J.IMAGE_NO = I.IMAGE_NO
+		  WHERE J.PKG_NAME = #{pkg_name}
+		  	AND J.GROUP_NAME = #{group_name}
+    </select>
+    
+    <delete id="deleteLine" parameterType="com.ntels.avocado.domain.atom.general.scheduler.SchedulerGroup">
+    	DELETE FROM TAT_LINE_DEF WHERE LINE_TYPE = <include refid="com.ntels.avocado.dao.common.CodeDefine.LINE_TYPE_BATCHJOB"/>
+			AND (
+				SOURCE_ID IN (SELECT IMAGE_NO FROM TAT_BATCH_JOB WHERE GROUP_NAME = #{group_name})
+				OR TARGET_ID IN (SELECT IMAGE_NO FROM TAT_BATCH_JOB WHERE GROUP_NAME = #{group_name})
+			)
+    </delete>
+    
+    <delete id="deleteBatchFlow" parameterType="com.ntels.avocado.domain.atom.general.scheduler.SchedulerGroup">
+    	DELETE FROM TAT_BATCH_FLOW
+		WHERE
+			JOB_NAME IN (
+				SELECT JOB_NAME FROM TAT_BATCH_JOB WHERE GROUP_NAME = #{group_name}
+			)
+			OR NEXT_JOB_NAME IN (
+				SELECT JOB_NAME FROM TAT_BATCH_JOB WHERE GROUP_NAME = #{group_name}
+			)
+    </delete>
+    
+    <update id="resetBatchJobPosition" parameterType="com.ntels.avocado.domain.atom.general.scheduler.SchedulerGroup">
+    	UPDATE TAT_IMAGE SET
+			IMAGE_X = NULL,
+			IMAGE_Y = NULL
+		WHERE IMAGE_NO IN (SELECT IMAGE_NO FROM TAT_BATCH_JOB WHERE GROUP_NAME = #{group_name})
+    </update>
+    
+    <select id="getBatchJob" parameterType="com.ntels.avocado.domain.atom.general.scheduler.Scheduler" resultType="com.ntels.avocado.domain.atom.general.scheduler.Scheduler">
+    	SELECT JOB_NAME,
+			GROUP_NAME,
+			NODE_TYPE,
+			FAIL_CONT_YN,
+			RUN_YN,
+			DESCRIPTION,
+			IMAGE_NO
+		  FROM TAT_BATCH_JOB
+		  WHERE PKG_NAME = #{pkg_name}
+		  	AND GROUP_NAME = #{group_name}
+		  	AND JOB_NAME = #{job_name}
+		  	AND JOB_NAME &lt;&gt; #{job_name_old}
+    </select>
+    
+    <update id="updateImage" parameterType="com.ntels.avocado.domain.atom.config.networkmanager.AtomImage">
+		UPDATE TAT_IMAGE SET
+			IMAGE_UUID = #{image_uuid},
+			IMAGE_X = #{image_x},
+			IMAGE_Y = #{image_y},
+			IMAGE_NAME = #{image_name},
+			IMAGE_BGCOLOR = #{image_bgcolor},
+			IMAGE_HEIGHT = #{image_height},
+			IMAGE_WIDTH = #{image_width}
+		WHERE IMAGE_NO = #{image_no}
+	</update>
+	
+	<update id="updateBatchJob" parameterType="com.ntels.avocado.domain.atom.general.scheduler.Scheduler">
+		UPDATE TAT_BATCH_JOB SET
+			JOB_NAME = #{job_name},
+			ROOTJOB_YN = #{rootjob_yn},
+			NODE_NO = #{node_no},
+			PROC_NO = #{proc_no},
+			FAIL_CONT_YN = #{fail_cont_yn},
+			RUN_YN = #{run_yn},
+			DESCRIPTION = #{description}
+		WHERE PKG_NAME = #{pkg_name}
+			AND GROUP_NAME = #{group_name}
+			AND JOB_NAME = #{job_name_old}
+	</update>
+	
+	<insert id="insertImage" parameterType="com.ntels.avocado.domain.atom.config.networkmanager.AtomImage">
+		<selectKey keyProperty="image_no" resultType="String" order="BEFORE">
+			SELECT IFNULL(MAX(IMAGE_NO), 0) + 1 AS IMAGE_NO FROM TAT_IMAGE
+		</selectKey>
+		INSERT INTO TAT_IMAGE (
+			IMAGE_NO,
+			IMAGE_UUID,
+			IMAGE_X,
+			IMAGE_Y,
+			IMAGE_NAME,
+			IMAGE_BGCOLOR,
+			IMAGE_HEIGHT,
+			IMAGE_WIDTH
+		) VALUES (
+			#{image_no},
+			#{image_uuid},
+			#{image_x},
+			#{image_y},
+			#{image_name},
+			#{image_bgcolor},
+			#{image_height},
+			#{image_width}
+		)
+	</insert>
+	
+	<insert id="insertBatchJob" parameterType="com.ntels.avocado.domain.atom.general.scheduler.Scheduler">
+		INSERT INTO TAT_BATCH_JOB (
+			JOB_NAME,
+			GROUP_NAME,
+			PKG_NAME,
+			ROOTJOB_YN,
+			NODE_NO,
+			NODE_TYPE,
+			PROC_NO,
+			FAIL_CONT_YN,
+			RUN_YN,
+			IMAGE_NO,
+			DESCRIPTION
+		) VALUES (
+			#{job_name},
+			#{group_name},
+			#{pkg_name},
+			#{rootjob_yn},
+			#{node_no},
+			#{node_type},
+			#{proc_no},
+			#{fail_cont_yn},
+			#{run_yn},
+			#{image_no},
+			#{description}
+		)
+	</insert>
+	
+	<select id="getImageNoByUUID" parameterType="String" resultType="String">
+		SELECT IMAGE_NO FROM TAT_IMAGE WHERE IMAGE_UUID = #{image_uuid}
+	</select>
+	
+	<insert id="insertBatchFlow" parameterType="com.ntels.avocado.domain.atom.config.networkmanager.Line">
+		<selectKey keyProperty="flow_no" resultType="String" order="BEFORE">
+			SELECT IFNULL(MAX(FLOW_NO), 0) + 1 AS FLOW_NO FROM TAT_BATCH_FLOW
+		</selectKey>
+		INSERT INTO TAT_BATCH_FLOW (
+			FLOW_NO,
+			EXIT_CD,
+			JOB_NAME,
+			NEXT_JOB_NAME
+		) VALUES (
+			#{flow_no},
+			#{exit_cd},
+			#{job_name},
+			#{next_job_name}
+		)
+	</insert>
+	
+	<insert id="insertLine" parameterType="com.ntels.avocado.domain.atom.config.networkmanager.Line">
+		<selectKey keyProperty="line_id" resultType="String" order="BEFORE">
+			SELECT IFNULL(MAX(LINE_ID), 0) + 1 AS LINE_ID FROM TAT_LINE_DEF
+		</selectKey>
+		INSERT INTO TAT_LINE_DEF (
+			LINE_ID,
+			SOURCE_TYPE,
+			SOURCE_ID,
+			SOURCE_PORT,
+			TARGET_TYPE,
+			TARGET_ID,
+			TARGET_PORT,
+			ROUTER,
+			LINE_TYPE,
+			FULL_DUPLEX,
+			LINE_DESC
+		) VALUES (
+			#{line_id},
+			#{source_type},
+			#{source_id},
+			#{source_port},
+			#{target_type},
+			#{target_id},
+			#{target_port},
+			#{router},
+			<include refid="com.ntels.avocado.dao.common.CodeDefine.LINE_TYPE_BATCHJOB"/>,
+			#{full_duplex},
+			#{line_desc}
+		)
+	</insert>
+	
+	<select id="listLine" parameterType="com.ntels.avocado.domain.atom.general.scheduler.SchedulerGroup" resultType="com.ntels.avocado.domain.atom.config.networkmanager.Line">
+		SELECT L.LINE_ID,
+			L.SOURCE_TYPE,
+			SI.IMAGE_UUID AS SOURCE_ID,
+			L.SOURCE_PORT,
+			L.TARGET_TYPE,
+			TI.IMAGE_UUID AS TARGET_ID,
+			L.TARGET_PORT,
+			L.ROUTER,
+			L.LINE_TYPE,
+			L.FULL_DUPLEX,
+			L.LINE_DESC,
+			F.EXIT_CD
+		FROM TAT_LINE_DEF L,
+			TAT_BATCH_FLOW F,
+			TAT_BATCH_JOB S,
+			TAT_BATCH_JOB T,
+			TAT_IMAGE SI,
+			TAT_IMAGE TI
+		WHERE L.LINE_TYPE = <include refid="com.ntels.avocado.dao.common.CodeDefine.LINE_TYPE_BATCHJOB"/>
+			AND S.IMAGE_NO = L.SOURCE_ID
+			AND T.IMAGE_NO = L.TARGET_ID
+			AND S.JOB_NAME = F.JOB_NAME
+			AND T.JOB_NAME = F.NEXT_JOB_NAME
+			AND S.IMAGE_NO = SI.IMAGE_NO
+			AND T.IMAGE_NO = TI.IMAGE_NO
+	</select>
+	
+	<select id="nodeSocketInfo" resultType="com.ntels.avocado.domain.atom.general.scheduler.SchedulerGroup">
+	 /* [SchedulerMapper.xml].[nodeSocketInfo] */
+		SELECT NODE_TYPE
+		     , NODE_NO
+		  FROM TAT_NODE
+		 WHERE 1=1
+		   AND PKG_NAME			= 'ATOM'
+		   AND NODE_NAME		= 'ATOM'
+	</select>
+	
+	<select id="processSocketInfo" resultType="com.ntels.avocado.domain.atom.general.scheduler.SchedulerGroup">
+	 /* [SchedulerMapper.xml].[processSocketInfo] */
+		SELECT PROC_NO
+		     , PKG_NAME
+			 , PROC_NAME
+		  FROM TAT_PROCESS
+		 WHERE 1=1
+		   AND PKG_NAME			= 'ATOM'
+		   AND PROC_NAME		= 'BJM'
+	</select>
+	
+</mapper>

@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ntels.avocado.dao.atom.security.sessionmanage.SessionManageMapper">
+
+	<select id="count" resultType="int">
+		SELECT COUNT(*)
+		  FROM (SELECT USER_ID
+		             , SESSION_ID
+		             , USER_NAME
+		             , GATEWAY_IP
+		             , TYPE
+		             , TYPE_NAME
+		             , MAX(LOGIN_DATE) AS LOGIN_DATE
+		          FROM (SELECT A.USER_ID
+		                     , A.SESSION_ID
+		                     , A.USER_NAME
+		                     , A.GATEWAY_IP
+		                     , A.TYPE
+		                     , A.TYPE_NAME
+		                     , B.LOGIN_DATE
+		                  FROM (SELECT B.USER_ID
+		                             , B.SESSION_ID
+		                             , A.USER_NAME
+		                             , B.GATEWAY_IP
+		                             , B.TYPE
+		                             , (SELECT CODE_NAME 
+		                                  FROM TAT_COMMON_CODE CODE 
+		                                 WHERE 1=1 
+		                                   AND CODE.DETAIL_CD = B.TYPE
+		                                   AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.PFNM_HISTORY_LOGIN_CONSTANTS_CLIENT_TYPE"/>) AS TYPE_NAME 
+		                          FROM TAT_USER A
+		                             , TAT_USER_SESSION B
+		                         WHERE 1=1
+		                           AND A.USER_ID = B.USER_ID
+		                           AND B.STATUS = 'Y'
+		                           AND A.LEVEL_ID <![CDATA[>=]]> #{condition.userLevelId}
+		                       ) A
+		                     , TAT_LOGIN_HIST B
+		                 WHERE 1=1
+		                   AND A.USER_ID = B.USER_ID
+		                   AND A.SESSION_ID = B.SESSION_ID
+		                   AND A.GATEWAY_IP = B.LOGIN_IP
+		                   AND A.TYPE = B.LOGIN_CLIENT_TYPE
+		               ) A
+		         WHERE 1=1
+		         GROUP BY USER_ID, GATEWAY_IP, TYPE, SESSION_ID
+		     ) A
+		 WHERE 1=1
+	   	   <if test="condition.user_id != '' and condition.user_id != null">
+	   	   AND USER_ID LIKE CONCAT('%', #{condition.user_id , jdbcType=CHAR}, '%')
+	       </if>
+	       <if test="condition.user_name != '' and condition.user_name != null">
+	       AND USER_NAME LIKE CONCAT('%', #{condition.user_name , jdbcType=CHAR}, '%')
+	       </if>
+	</select>
+
+	<select id="list" resultType="com.ntels.avocado.domain.atom.security.sessionmanage.SessionManageDomain">
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_header" />
+			SELECT USER_ID
+			     , SESSION_ID
+			     , USER_NAME
+			     , GATEWAY_IP
+			     , TYPE
+			     , TYPE_NAME
+ 				 , CASE LOGIN_DATE
+		       	 		WHEN LOGIN_DATE IS NULL
+		       			THEN ''
+		       	   ELSE CONCAT(DATE_FORMAT(LOGIN_DATE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language})) ,' ',DATE_FORMAT(LOGIN_DATE, '%H:%i:%s'))
+			       END AS LOGIN_DATE
+			  FROM (SELECT USER_ID
+			             , SESSION_ID
+			             , USER_NAME
+			             , GATEWAY_IP
+			             , TYPE
+			             , TYPE_NAME
+			             , MAX(LOGIN_DATE) AS LOGIN_DATE
+			          FROM (SELECT A.USER_ID
+			                     , A.SESSION_ID
+			                     , A.USER_NAME
+			                     , A.GATEWAY_IP
+			                     , A.TYPE
+			                     , A.TYPE_NAME
+			                     , B.LOGIN_DATE
+			                  FROM (SELECT B.USER_ID
+			                             , B.SESSION_ID
+			                             , A.USER_NAME
+			                             , B.GATEWAY_IP
+			                             , B.TYPE
+			                             , (SELECT CODE_NAME 
+			                                  FROM TAT_COMMON_CODE CODE 
+			                                 WHERE 1=1 
+			                                   AND CODE.DETAIL_CD = B.TYPE
+			                                   AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.PFNM_HISTORY_LOGIN_CONSTANTS_CLIENT_TYPE"/>) AS TYPE_NAME 
+			                          FROM TAT_USER A
+			                             , TAT_USER_SESSION B
+			                         WHERE 1=1
+			                           AND A.USER_ID = B.USER_ID
+			                           AND B.STATUS = 'Y'
+			                           AND A.LEVEL_ID <![CDATA[>=]]> #{condition.userLevelId}
+			                       ) A
+			                     , TAT_LOGIN_HIST B
+			                 WHERE 1=1
+			                   AND A.USER_ID = B.USER_ID
+			                   AND A.SESSION_ID = B.SESSION_ID
+			                   AND A.GATEWAY_IP = B.LOGIN_IP
+			                   AND A.TYPE = B.LOGIN_CLIENT_TYPE
+			               ) A
+			         WHERE 1=1
+			         GROUP BY USER_ID, GATEWAY_IP, TYPE, SESSION_ID
+			     ) A
+			 WHERE 1=1
+		   	   <if test="condition.user_id != '' and condition.user_id != null">
+		   	   AND USER_ID LIKE CONCAT('%', #{condition.user_id , jdbcType=CHAR}, '%')
+		       </if>
+		       <if test="condition.user_name != '' and condition.user_name != null">
+		       AND USER_NAME LIKE CONCAT('%', #{condition.user_name , jdbcType=CHAR}, '%')
+		       </if>
+			 <if test="condition.orderBy != '' and condition.orderBy != null">
+			 ORDER BY ${condition.orderBy}
+			 </if>
+			 <if test="condition.orderBy == '' or condition.orderBy == null">
+			 ORDER BY USER_NAME DESC, LOGIN_DATE DESC 
+			 </if>
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_footer" />
+	</select>
+
+	<select id="getSessionLoginDate" resultType="java.util.Map">
+		SELECT DATE_FORMAT(LOGIN_DATE, '%Y%m%d%H%i%s') AS LOGIN_DATE
+		  FROM TAT_LOGIN_HIST
+		 WHERE 1=1
+		   AND USER_ID = #{userId}
+		   AND SESSION_ID = #{sessionId}
+		   AND LOGIN_IP = #{gatewayIp}
+		 GROUP BY LOGIN_DATE DESC LIMIT 1;
+	</select>
+
+    <update id="updateSessionStop" parameterType="String">
+        UPDATE TAT_USER_SESSION SET
+            STATUS = 'N'
+         WHERE 1=1
+           AND USER_ID = #{userId}
+           AND SESSION_ID = #{sessionId}
+    </update> 	
+    
+    <update id="updateLogoutSessionStop" parameterType="com.ntels.avocado.domain.atom.history.login.LoginHistoryExtended">
+        UPDATE TAT_LOGIN_HIST SET
+              LOGOUT_DATE = STR_TO_DATE(#{loginHistoryExtended.logoutDate},'%Y%m%d%H%i%s')
+            , LOGOUT_RESULT = #{loginHistoryExtended.logoutResult}
+            , DESCRIPTION = #{loginHistoryExtended.description}
+        WHERE 1=1
+          AND USER_ID  = #{loginHistoryExtended.userId}
+          AND SESSION_ID = #{loginHistoryExtended.sessionId}
+          AND LOGIN_DATE = STR_TO_DATE(#{loginHistoryExtended.loginDate},'%Y%m%d%H%i%s')
+          AND LOGIN_IP = #{loginHistoryExtended.loginIp}  
+    </update>   
+
+	<select id="listExcel" resultType="java.util.LinkedHashMap">
+		SELECT USER_ID AS 'User ID'
+		     , USER_NAME AS 'User Name'
+		     , CASE LOGIN_DATE
+		       		WHEN LOGIN_DATE IS NULL
+		       		THEN ''
+		       		ELSE CONCAT(DATE_FORMAT(LOGIN_DATE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language})) ,' ',DATE_FORMAT(LOGIN_DATE, '%H:%i:%s'))
+		       END AS 'Date'
+		     , GATEWAY_IP AS 'IP'
+		     , TYPE_NAME AS 'Type'
+		  FROM (SELECT USER_ID
+		             , SESSION_ID
+		             , USER_NAME
+		             , GATEWAY_IP
+		             , TYPE
+		             , TYPE_NAME
+		             , MAX(LOGIN_DATE) AS LOGIN_DATE
+		          FROM (SELECT A.USER_ID
+		                     , A.SESSION_ID
+		                     , A.USER_NAME
+		                     , A.GATEWAY_IP
+		                     , A.TYPE
+		                     , A.TYPE_NAME
+		                     , B.LOGIN_DATE
+		                  FROM (SELECT B.USER_ID
+		                             , B.SESSION_ID
+		                             , A.USER_NAME
+		                             , B.GATEWAY_IP
+		                             , B.TYPE
+		                             , (SELECT CODE_NAME 
+		                                  FROM TAT_COMMON_CODE CODE 
+		                                 WHERE 1=1 
+		                                   AND CODE.DETAIL_CD = B.TYPE
+		                                   AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.PFNM_HISTORY_LOGIN_CONSTANTS_CLIENT_TYPE"/>) AS TYPE_NAME 
+		                          FROM TAT_USER A
+		                             , TAT_USER_SESSION B
+		                         WHERE 1=1
+		                           AND A.USER_ID = B.USER_ID
+		                           AND B.STATUS = 'Y'
+		                           AND A.LEVEL_ID <![CDATA[>=]]> #{condition.userLevelId}
+		                       ) A
+		                     , TAT_LOGIN_HIST B
+		                 WHERE 1=1
+		                   AND A.USER_ID = B.USER_ID
+		                   AND A.SESSION_ID = B.SESSION_ID
+		                   AND A.GATEWAY_IP = B.LOGIN_IP
+		                   AND A.TYPE = B.LOGIN_CLIENT_TYPE
+		               ) A
+		         WHERE 1=1
+		         GROUP BY USER_ID, GATEWAY_IP, TYPE, A.SESSION_ID
+		     ) A
+		 WHERE 1=1
+	   	   <if test="condition.user_id != '' and condition.user_id != null">
+	   	   AND USER_ID LIKE CONCAT('%', #{condition.user_id , jdbcType=CHAR}, '%')
+	       </if>
+	       <if test="condition.user_name != '' and condition.user_name != null">
+	       AND USER_NAME LIKE CONCAT('%', #{condition.user_name , jdbcType=CHAR}, '%')
+	       </if>
+		 <if test="condition.orderBy != '' and condition.orderBy != null">
+		 ORDER BY ${condition.orderBy}
+		 </if>
+		 <if test="condition.orderBy == '' or condition.orderBy == null">
+		 ORDER BY USER_NAME DESC, LOGIN_DATE DESC 
+		 </if>
+	</select>
+	
+</mapper>

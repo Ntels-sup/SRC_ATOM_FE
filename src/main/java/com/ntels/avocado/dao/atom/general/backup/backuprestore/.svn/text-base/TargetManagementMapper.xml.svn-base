@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ntels.avocado.dao.atom.general.backup.backuprestore.TargetManagementMapper">
+  
+    <select id="listTargCd" resultType="java.util.HashMap">
+		SELECT 
+		     DETAIL_CODE AS ID
+		    ,CODE_NAME   AS NAME
+		  FROM T_NFW_COMMON_CODE
+		 WHERE 1=1
+		   AND GROUP_CODE = <include refid="com.ntels.avocado.dao.common.CodeDefine.BACKUP_RECOVERY_TARGET_TYPE"/>
+		   AND DETAIL_CODE != 'F'
+    </select>
+        
+	<select id="selectTargetList"
+			parameterType="com.ntels.avocado.domain.atom.general.backup.backuprestore.TargetCondition"	
+			resultType="com.ntels.avocado.domain.atom.general.backup.backuprestore.TargetDomain">
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_header"/>	
+		SELECT
+			CODE
+			, TYPE_CODE
+			, NAME
+			, CODE_FORMAT
+      		, (SELECT CODE_NAME
+          		FROM T_NFW_COMMON_CODE 
+		     	WHERE 1=1
+		       	  AND GROUP_CODE = <include refid="com.ntels.avocado.dao.common.CodeDefine.BACKUP_RECOVERY_TARGET_TYPE"/>
+		          AND DETAIL_CODE != 'F'
+                  AND DETAIL_CODE = TYPE_CODE ) AS TYPE_CODE_NAME 			
+		FROM T_MDF_REC_TARGET_CODE
+		WHERE 1=1 
+			<if test="condition.type_code != null and condition.type_code != 'all'">
+			  AND TYPE_CODE = #{condition.type_code}		
+			</if>			
+			<if test="condition.code != null and condition.code != ''">
+			  AND CODE = #{condition.code}
+			</if>			
+		ORDER BY TYPE_CODE, CODE
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_footer"/>
+	 </select>
+	 
+	<select id="selectListTotalCount"
+			parameterType="com.ntels.avocado.domain.atom.general.backup.backuprestore.TargetCondition"	
+			resultType="Integer">	
+		SELECT
+			COUNT(*) 			
+		FROM T_MDF_REC_TARGET_CODE
+		WHERE 1=1 
+			<if test="condition.type_code != null and condition.type_code != 'all'">
+			  AND TYPE_CODE = #{condition.type_code}		
+			</if>			
+			<if test="condition.code != null and condition.code != ''">
+			  AND CODE = #{condition.code}
+			</if>			
+	 </select>	 
+	 
+	<select id="selectTargetInfo"
+			parameterType="com.ntels.avocado.domain.atom.general.backup.backuprestore.TargetCondition"
+			resultType="com.ntels.avocado.domain.atom.general.backup.backuprestore.TargetDomain">
+		SELECT
+			CODE
+			, TYPE_CODE
+			, NAME
+			, CODE_FORMAT
+		FROM T_MDF_REC_TARGET_CODE
+		WHERE 1=1 
+		  AND CODE = #{condition.code}
+		  AND TYPE_CODE = #{condition.type_code}
+	 </select>
+	 
+	<select id="selectTargetCount" 
+			parameterType="com.ntels.avocado.domain.atom.general.backup.backuprestore.TargetCondition" resultType="Integer">
+		SELECT
+			COUNT(*)
+		FROM
+			T_MDF_REC_TARGET_CODE
+		WHERE 1=1
+          AND CODE = #{condition.code}
+          AND TYPE_CODE = #{condition.type_code}		    	    					
+	</select>	 	 
+	 
+	<insert id="insertTargetInfo" 
+			parameterType="com.ntels.avocado.domain.atom.general.backup.backuprestore.TargetDomain">
+		INSERT INTO T_MDF_REC_TARGET_CODE
+		(
+			CODE
+			, TYPE_CODE
+			, NAME
+			, CODE_FORMAT
+		)
+		VALUES
+		(	 #{code}
+			, #{type_code}
+			, #{name}
+			, #{code_format}
+		)			
+	</insert>
+	
+	<update id="updateTargetInfo" 
+			parameterType="com.ntels.avocado.domain.atom.general.backup.backuprestore.TargetDomain">
+		UPDATE
+			T_MDF_REC_TARGET_CODE
+		SET
+			NAME = #{name}
+			, CODE_FORMAT = #{code_format}
+		WHERE 1=1
+		  AND CODE = #{code}
+		  AND TYPE_CODE = #{type_code}
+     </update>	
+	
+	<delete id="deleteTargetInfo"
+			parameterType="com.ntels.avocado.domain.atom.general.backup.backuprestore.TargetCondition">
+		DELETE FROM
+			T_MDF_REC_TARGET_CODE
+		WHERE 1=1
+		  AND CODE = #{condition.code}
+		  AND TYPE_CODE = #{condition.type_code}
+     </delete>	
+     
+	<select id="selectExcelTarget"
+			resultType="org.apache.commons.collections.map.CaseInsensitiveMap">
+		SELECT
+			CODE as "Target Code"
+      		, TYPE_CODE
+      		, (SELECT CODE_NAME
+          		FROM T_NFW_COMMON_CODE 
+		     	WHERE 1=1
+		       	  AND GROUP_CODE = <include refid="com.ntels.avocado.dao.common.CodeDefine.BACKUP_RECOVERY_TARGET_TYPE"/>
+		          AND DETAIL_CODE != 'F'
+                  AND DETAIL_CODE = TYPE_CODE ) as "Target Type" 
+			, NAME as "Target Name"
+			, CODE_FORMAT as "Code Format"
+		FROM T_MDF_REC_TARGET_CODE    
+    	ORDER BY TYPE_CODE, CODE
+	 </select>     
+	
+</mapper>

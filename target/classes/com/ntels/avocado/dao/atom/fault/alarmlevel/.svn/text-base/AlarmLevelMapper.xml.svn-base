@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ntels.avocado.dao.atom.fault.alarmlevel.AlarmLevelMapper">
+	
+	<select id="listAlmCodeDef" parameterType="com.ntels.avocado.domain.atom.fault.alarmlevel.AlmCodeDef" resultType="com.ntels.avocado.domain.atom.fault.alarmlevel.AlmCodeDef">
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_header" />
+		SELECT PKG_NAME,
+			CODE,
+			TYPE_CCD,
+			GROUP_CCD,
+			ALIAS_CODE,
+			PROBABLE_CAUSE,
+			SEVERITY_CCD,
+			SMS_YN,
+			EMAIL_YN,
+			SNMP_YN,
+			ALARM_YN,
+			DESCRIPTION
+		FROM TAT_ALM_CODE_DEF
+		WHERE PKG_NAME = 'ATOM'
+			OR PKG_NAME IN 
+			<foreach collection="condition.pkg_name_arr" item ="pkg_name" index="index"   open="(" separator="," close=")" >
+				#{pkg_name}
+			</foreach>
+			<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_footer" />
+			ORDER BY PKG_NAME ASC, CODE ASC
+	</select>
+	
+	<select id="countAlmCodeDef" parameterType="com.ntels.avocado.domain.atom.fault.alarmlevel.AlmCodeDef" resultType="int">
+		SELECT COUNT(*)
+		FROM TAT_ALM_CODE_DEF
+		WHERE PKG_NAME = 'ATOM'
+			OR PKG_NAME IN 
+			<foreach collection="condition.pkg_name_arr" item ="pkg_name" index="index"   open="(" separator="," close=")" >
+				#{pkg_name}
+			</foreach>
+			ORDER BY PKG_NAME ASC, CODE ASC
+	</select>
+	
+	<select id="getAlmCodeDef" parameterType="com.ntels.avocado.domain.atom.fault.alarmlevel.AlmCodeDef" resultType="com.ntels.avocado.domain.atom.fault.alarmlevel.AlmCodeDef">
+		SELECT PKG_NAME,
+			CODE,
+			TYPE_CCD,
+			GROUP_CCD,
+			ALIAS_CODE,
+			PROBABLE_CAUSE,
+			SEVERITY_CCD,
+			SMS_YN,
+			EMAIL_YN,
+			SNMP_YN,
+			ALARM_YN,
+			DESCRIPTION
+		FROM TAT_ALM_CODE_DEF
+		WHERE PKG_NAME = #{pkg_name}
+			AND CODE = #{code}
+	</select>
+	
+	<select id="listAlmMonitorDef" parameterType="com.ntels.avocado.domain.atom.fault.alarmlevel.AlmCodeDef" resultType="com.ntels.avocado.domain.atom.fault.alarmlevel.AlmMonitorDef">
+		SELECT MONITOR_DEF_NO,
+			PKG_NAME,
+			CODE,
+			NODE_TYPE,
+			MAX_VALUE,
+			UNIT_VALUE,
+			REF_TABLE,
+			REF_COLUMN,
+			COLUMN_CONDITION,
+			TARGET_NAME_COLUMN,
+			MAX_VALUE_COLUMN,
+			NODE_TYPE_COLUMN,
+			DESCTIPTION
+		FROM TAT_ALM_MONITOR_DEF
+		WHERE PKG_NAME = #{pkg_name}
+			AND CODE = #{code}
+	</select>
+	
+	<select id="listAlmMonitorTarget" parameterType="com.ntels.avocado.domain.atom.fault.alarmlevel.AlmMonitorDef" resultType="com.ntels.avocado.domain.atom.fault.alarmlevel.AlmMonitorDef">
+		SELECT ${target_name_column} AS TARGET
+		FROM ${ref_table}
+		WHERE ${ref_column} = #{column_condition}
+	</select>
+	
+	<update id="saveAlmCodeDef" parameterType="com.ntels.avocado.domain.atom.fault.alarmlevel.AlmCodeDef">
+		UPDATE TAT_ALM_CODE_DEF SET SEVERITY_CCD = #{severity_ccd}
+		WHERE PKG_NAME = #{pkg_name}
+			AND CODE = #{code}
+	</update>
+	
+	<select id="getAlmMonitor" parameterType="com.ntels.avocado.domain.atom.fault.alarmlevel.AlmMonitor" resultType="com.ntels.avocado.domain.atom.fault.alarmlevel.AlmMonitor">
+		SELECT MONITOR_ID,
+			PKG_NAME,
+			CODE,
+			NODE_TYPE,
+			LOCATION,
+			TARGET,
+			COMPLEMENT,
+			DESCRIPTION
+		FROM TAT_ALM_MONITOR
+		WHERE PKG_NAME = #{pkg_name}
+			AND CODE = #{code}
+			AND TARGET = #{target}
+			AND RANGE_YN = 'Y'
+	</select>
+	
+	<select id="listAlmLevel" parameterType="com.ntels.avocado.domain.atom.fault.alarmlevel.AlmMonitorDef" resultType="com.ntels.avocado.domain.atom.fault.alarmlevel.AlmLevel">
+		SELECT L.MONITOR_ID,
+			L.SEVERITY_CCD,
+			L.VALUE
+		FROM TAT_ALM_LEVEL L,
+			TAT_ALM_MONITOR M
+		WHERE L.MONITOR_ID = M.MONITOR_ID
+			AND M.PKG_NAME = #{pkg_name}
+			AND M.CODE = #{code}
+			AND M.TARGET = #{target}
+			AND M.RANGE_YN = 'Y'
+		ORDER BY CAST(VALUE AS UNSIGNED) ASC
+	</select>
+	
+	<insert id="insertAlmMonitor" parameterType="com.ntels.avocado.domain.atom.fault.alarmlevel.AlmMonitor">
+		<selectKey keyProperty="monitor_id" resultType="String" order="BEFORE">
+			SELECT IFNULL(MAX(MONITOR_ID), 0) + 1 AS MONITOR_ID FROM TAT_ALM_MONITOR
+		</selectKey>
+		INSERT INTO TAT_ALM_MONITOR (
+			MONITOR_ID,
+			PKG_NAME,
+			CODE,
+			NODE_TYPE,
+			LOCATION,
+			TARGET,
+			COMPLEMENT,
+			DESCRIPTION,
+			RANGE_YN
+		) VALUES (
+			#{monitor_id},
+			#{pkg_name},
+			#{code},
+			#{node_type},
+			#{target},
+			#{target},
+			#{complement},
+			#{description},
+			'Y'
+		)
+	</insert>
+	
+	<delete id="deleteAlmLevel" parameterType="com.ntels.avocado.domain.atom.fault.alarmlevel.AlmMonitor">
+		DELETE FROM TAT_ALM_LEVEL
+		WHERE MONITOR_ID = #{monitor_id}
+	</delete>
+	
+	<insert id="insertAlmLevel" parameterType="com.ntels.avocado.domain.atom.fault.alarmlevel.AlmLevel">
+		INSERT INTO TAT_ALM_LEVEL (
+			MONITOR_ID,
+			SEVERITY_CCD,
+			VALUE
+		) VALUES (
+			#{monitor_id},
+			#{severity_ccd},
+			#{value}
+		)
+	</insert>
+	
+	<select id="listExcel" resultType="java.util.LinkedHashMap" parameterType="com.ntels.avocado.domain.atom.fault.alarmlevel.AlmCodeDef">
+       	SELECT PKG_NAME,
+			CODE,
+			TYPE_CCD,
+			GROUP_CCD,
+			ALIAS_CODE,
+			PROBABLE_CAUSE,
+			SEVERITY_CCD,
+			SMS_YN,
+			EMAIL_YN,
+			SNMP_YN,
+			ALARM_YN,
+			DESCRIPTION
+		FROM TAT_ALM_CODE_DEF
+		WHERE PKG_NAME = 'ATOM'
+			OR PKG_NAME IN 
+			<foreach collection="condition.pkg_name_arr" item ="pkg_name" index="index"   open="(" separator="," close=")" >
+				#{pkg_name}
+			</foreach>
+			ORDER BY PKG_NAME ASC, CODE ASC
+   </select>
+	
+</mapper>

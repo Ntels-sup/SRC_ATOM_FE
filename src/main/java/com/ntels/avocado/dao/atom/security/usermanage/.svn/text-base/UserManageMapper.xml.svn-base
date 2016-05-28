@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ntels.avocado.dao.atom.security.usermanage.UserManageMapper">
+
+	<select id="listUserGroup" resultType="java.util.Map">
+		 SELECT GROUP_NO   AS ID
+		      , GROUP_NAME AS NAME
+		   FROM TAT_USER_GROUP
+		  WHERE 1=1
+		  ORDER BY GROUP_NO
+	</select>
+	
+	<select id="listUserLevel" resultType="java.util.Map">
+		 SELECT LEVEL_ID    AS ID
+		      , LEVEL_TITLE AS NAME 
+		   FROM TAT_USER_LEVEL
+		  WHERE 1=1
+		    AND LEVEL_ID <![CDATA[>=]]> #{userLevelId}
+		  ORDER BY LEVEL_ID
+	</select>
+
+	<select id="getPasswd" resultType="String">
+		 SELECT PASSWD 
+		   FROM TAT_USER
+		  WHERE 1=1
+			AND USER_ID = #{userId}
+	</select>
+	
+	<select id="getPasswdLifeCycle" resultType="int">
+		 SELECT IFNULL(PASSWD_LIFE_CYCLE,7) AS PASSWD_LIFE_CYCLE
+		   FROM TAT_USER_LEVEL
+		  WHERE 1=1
+			AND LEVEL_ID = #{userLevelId}
+	</select>
+	
+	<select id="duplChkUserId" resultType="int">
+		 SELECT COUNT(*)
+		   FROM TAT_USER
+		  WHERE 1=1
+			AND USER_ID = #{userId}
+	</select>
+	
+	<select id="count" resultType="int">
+		SELECT COUNT(*)
+		  FROM TAT_USER
+		 WHERE 1=1
+		   AND LEVEL_ID <![CDATA[>=]]> #{condition.userLevelId}
+		   <if test="condition.groupNo != 'all' and condition.groupNo != '' and condition.groupNo != null ">
+		   AND GROUP_NO = #{condition.groupNo}
+		   </if>
+		 ORDER BY USER_ID
+	</select>
+	
+	<select id="list" resultType="com.ntels.avocado.domain.atom.security.usermanage.UserManageDomain">
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_header" />
+			SELECT USER_ID
+			     , USER_NAME
+			     , A.GROUP_NO
+			     , GROUP_NAME
+			     , A.LEVEL_ID
+			     , LEVEL_TITLE AS LEVEL_NAME
+			     , USER_EMAIL
+			     , USER_PHONE
+			     , DATE_FORMAT(ACCOUNT_EXFIRE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language})) AS ACCOUNT_EXFIRE
+			     , (SELECT CODE_NAME 
+			          FROM TAT_COMMON_CODE 
+			         WHERE 1=1 
+			           AND DETAIL_CD = STATUS 
+			           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.USER_MANAGER_COMMON_GROUP_CODE_STATUS"/>) AS STATUS
+			  FROM TAT_USER A
+			     , TAT_USER_GROUP B
+			     , TAT_USER_LEVEL C
+			 WHERE 1=1
+			   AND A.GROUP_NO = B.GROUP_NO
+			   AND A.LEVEL_ID = C.LEVEL_ID
+			   AND A.LEVEL_ID <![CDATA[>=]]> #{condition.userLevelId}
+			   <if test="condition.groupNo != 'all' and condition.groupNo != '' and condition.groupNo != null ">
+			   AND A.GROUP_NO = #{condition.groupNo}
+			   </if>
+			 ORDER BY USER_ID
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_footer" />
+	</select>
+	
+	<select id="detail" resultType="com.ntels.avocado.domain.atom.security.usermanage.UserManageDomain">
+		SELECT USER_ID
+		     , USER_NAME
+		     , A.GROUP_NO
+		     , GROUP_NAME
+		     , A.LEVEL_ID
+		     , LEVEL_TITLE AS LEVEL_NAME
+		     , LAST_LOGIN_IP
+		     , USER_EMAIL
+		     , LOGIN_TYPE
+		     , EMP_NO
+		     , USER_PHONE
+		     , DATE_FORMAT(ACCOUNT_EXFIRE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language})) AS ACCOUNT_EXFIRE
+		     , DATE_FORMAT(PASSWD_EXFIRE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language})) AS PASSWD_EXFIRE
+		     , STATUS
+		     , STATUS_REASON
+		     , RETRY_COUNT
+		  FROM TAT_USER A
+		     , TAT_USER_GROUP B
+		     , TAT_USER_LEVEL C
+		 WHERE 1=1
+		   AND A.GROUP_NO = B.GROUP_NO
+		   AND A.LEVEL_ID = C.LEVEL_ID
+		   AND A.LEVEL_ID <![CDATA[>=]]> #{condition.userLevelId}
+		   AND A.USER_ID = #{condition.user_id}
+	</select>
+
+	<insert id="addAction" parameterType="com.ntels.avocado.domain.atom.security.usermanage.UserManageDomain">
+		INSERT INTO TAT_USER(
+			  USER_ID
+			, GROUP_NO
+			, LEVEL_ID
+			, USER_NAME
+			, EMP_NO
+			, USER_PHONE
+			, USER_EMAIL
+			, PASSWD
+			, DEFAULT_PASSWD_YN
+			, PASSWD_EXFIRE
+			, RETRY_COUNT
+			<if test="condition.userLevelId == 1">
+			, LOGIN_TYPE
+			, ACCOUNT_EXFIRE
+			, STATUS
+			, STATUS_REASON
+			</if>
+			)
+		VALUES( 
+		      #{condition.user_id}
+			, #{condition.group_no}
+			, #{condition.level_id}
+			, #{condition.user_name}
+			, #{condition.emp_no}
+			, #{condition.user_phone}
+			, #{condition.user_email}
+			, #{condition.passwd}
+			, #{condition.default_passwd_yn}
+			, DATE_FORMAT(DATE_ADD(NOW(),INTERVAL #{condition.passwd_life_cycle} DAY), '%Y%m%d')
+			, 0
+			<if test="condition.userLevelId == 1">
+			, #{condition.login_type}
+			, #{condition.account_exfire}
+			, #{condition.status}
+			, #{condition.status_reason}
+			</if>
+			)
+	</insert>
+	
+	<update id="modifyAction" parameterType="com.ntels.avocado.domain.atom.security.usermanage.UserManageDomain">
+		UPDATE TAT_USER
+		   SET USER_NAME = #{condition.user_name}
+		     , GROUP_NO = #{condition.group_no}
+		     , LEVEL_ID = #{condition.level_id}
+		     , EMP_NO = #{condition.emp_no}
+		     , USER_PHONE = #{condition.user_phone}
+		     , USER_EMAIL = #{condition.user_email}
+		     <if test="condition.userLevelId == 1">		     
+		     , DEFAULT_PASSWD_YN = #{condition.default_passwd_yn}
+		     , PASSWD = #{condition.passwd}
+		     , LOGIN_TYPE = #{condition.login_type}
+		     , ACCOUNT_EXFIRE = #{condition.account_exfire}
+			 <choose>
+				 <when test="condition.passwd_life_cycle != '' and condition.passwd_life_cycle != null ">
+				 , PASSWD_EXFIRE = DATE_FORMAT(DATE_ADD(NOW(),INTERVAL #{condition.passwd_life_cycle} DAY), '%Y%m%d')
+				 </when>
+				 <otherwise>
+				 , PASSWD_EXFIRE = #{condition.passwd_exfire}
+				 </otherwise>
+			 </choose>
+		     , STATUS = #{condition.status}
+		     <if test="condition.retry_count != '' and condition.retry_count != null ">
+		     , RETRY_COUNT = #{condition.retry_count}
+		     </if>
+		     , STATUS_REASON = #{condition.status_reason}
+		     </if>
+		 WHERE 1=1
+		   AND USER_ID = #{condition.user_id} 
+	</update>
+	
+	<delete id="removeAction" parameterType="com.ntels.avocado.domain.atom.security.usermanage.UserManageDomain">
+		DELETE FROM TAT_USER
+		 WHERE 1=1
+		   AND USER_ID = #{condition.user_id}
+	</delete>
+
+	<select id="listExcel" resultType="java.util.LinkedHashMap">
+		SELECT USER_ID AS 'User ID'
+		     , USER_NAME AS 'User Name'
+		     , GROUP_NAME AS 'User Group'
+		     , LEVEL_TITLE AS 'User Level'
+		     , IFNULL(USER_EMAIL,'') AS 'E-Mail'
+		     , IFNULL(USER_PHONE,'') AS 'Phone Number'
+		     , DATE_FORMAT(ACCOUNT_EXFIRE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language})) AS 'User Account Expiration'
+		     , (SELECT CODE_NAME 
+		          FROM TAT_COMMON_CODE 
+		         WHERE 1=1 
+		           AND DETAIL_CD = STATUS 
+		           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.USER_MANAGER_COMMON_GROUP_CODE_STATUS"/>) AS 'Status'
+		  FROM TAT_USER A
+		     , TAT_USER_GROUP B
+		     , TAT_USER_LEVEL C
+		 WHERE 1=1
+		   AND A.GROUP_NO = B.GROUP_NO
+		   AND A.LEVEL_ID = C.LEVEL_ID
+		   AND A.LEVEL_ID <![CDATA[>=]]> #{condition.userLevelId}
+		   <if test="condition.groupNo != 'all' and condition.groupNo != '' and condition.groupNo != null ">
+		   AND A.GROUP_NO = #{condition.groupNo}
+		   </if>
+		 ORDER BY USER_ID
+	</select>
+		
+</mapper>

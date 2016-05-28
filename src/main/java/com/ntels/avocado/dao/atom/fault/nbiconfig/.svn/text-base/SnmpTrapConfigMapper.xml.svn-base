@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ntels.avocado.dao.atom.fault.nbiconfig.SnmpTrapConfigMapper">
+    
+    <select id="trapConfig" resultType="com.ntels.avocado.domain.atom.fault.nbiconfig.NbiConfigDomain">
+        SELECT ENTERPRISE_OID
+             , TRAP_PROC
+             , TRAP_VERSION
+             , AGENT_IP
+             , AGENT_HOSTNAME
+          FROM TAT_TRAP_CONFIG
+         LIMIT 1
+    </select>
+
+	<select id="trapIpCount" resultType="int">
+        SELECT COUNT(*)
+          FROM TAT_TRAP_IP
+    </select>
+
+	<select id="trapIpList" resultType="com.ntels.avocado.domain.atom.fault.nbiconfig.NbiConfigDomain">
+        SELECT IP
+             , PORT
+             , COMMUNITY
+             , HOST_NAME
+             , DESCRIPTION
+         FROM TAT_TRAP_IP
+        ORDER BY IP ASC
+    </select>
+
+    <update id="modifyTrapConfig" parameterType="com.ntels.avocado.domain.atom.fault.nbiconfig.NbiConfigDomain">
+    	UPDATE TAT_TRAP_CONFIG 
+    	  SET  TRAP_PROC = #{trap_proc}
+    		 , TRAP_VERSION = #{trap_version}
+    		 , AGENT_IP = #{agent_ip}
+    		 , AGENT_HOSTNAME = #{agent_hostname}
+		WHERE  ENTERPRISE_OID = #{enterprise_oid}
+    </update>
+        
+    <insert id="addTrapIp" parameterType="com.ntels.avocado.domain.atom.fault.nbiconfig.NbiConfigDomain">
+    	INSERT INTO TAT_TRAP_IP 
+    		(IP, PORT, COMMUNITY, HOST_NAME, DESCRIPTION) 
+    	VALUES 
+    		(#{ip}, #{port}, #{community}, #{host_name}, #{description})
+    </insert>
+
+	<delete id="removeTrapIp">
+    	DELETE FROM TAT_TRAP_IP
+    </delete>
+    
+    <select id="listExcelTrapConfig" resultType="java.util.LinkedHashMap">      
+        SELECT ENTERPRISE_OID AS 'Enterprise OID'
+             , TRAP_VERSION AS 'Trap Version'
+             , TRAP_PROC AS 'Trap Process'
+             , AGENT_HOSTNAME AS 'Agent Host Name'
+             , AGENT_IP AS 'Agent IP Address'
+           FROM TAT_TRAP_CONFIG                 
+    </select> 
+    
+    <select id="listExcelTrapIp" resultType="java.util.LinkedHashMap">
+        SELECT IP AS 'Trap Destination IP'
+             , PORT AS 'Port'
+             , COMMUNITY AS 'Community'
+             , HOST_NAME AS 'Host Name'
+             , IFNULL(DESCRIPTION,'') AS 'Description'
+         FROM TAT_TRAP_IP
+        ORDER BY IP ASC
+    </select>
+    
+</mapper>

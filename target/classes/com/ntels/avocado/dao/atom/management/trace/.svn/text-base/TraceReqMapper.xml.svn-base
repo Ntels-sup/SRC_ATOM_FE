@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ntels.avocado.dao.atom.management.trace.TraceReqMapper">
+
+	<select id="listTraceProcess"
+			resultType="HashMap">
+		SELECT
+			PACKAGE_ID,
+			SERVICE_ID,
+			COMPONENT_TYPE,
+			PROCESS_ID
+		FROM
+			T_NFW_PROCESS
+		WHERE
+			TRACE_YN = 'Y'
+		ORDER BY 1, 2, 3, 4
+	 </select>
+
+	<select id="getTraceReq"
+			parameterType="com.ntels.avocado.domain.atom.management.trace.Condition"
+			resultType="com.ntels.avocado.domain.atom.management.trace.TraceReq">
+		SELECT
+			TRACE_REQ_ID,
+			SYSTEM_ID, 
+			PACKAGE_ID, 
+			SERVICE_ID,
+			(SELECT SYSTEM_NAME FROM T_NFW_SYSTEM WHERE SYSTEM_ID = T_UDBS_TRACE_REQ.SYSTEM_ID) AS SYSTEM_NAME,
+			(SELECT PACKAGE_NAME FROM T_NFW_PACKAGE WHERE PACKAGE_ID = T_UDBS_TRACE_REQ.PACKAGE_ID) AS PACKAGE_NAME,
+			(SELECT SERVICE_NAME FROM T_NFW_SERVICE WHERE PACKAGE_ID = T_UDBS_TRACE_REQ.PACKAGE_ID 
+				AND SERVICE_ID = T_UDBS_TRACE_REQ.SERVICE_ID) AS SERVICE_NAME,
+			FILTER_GRP_NM,
+			TO_CHAR(START_DATETIME, 'YYYY-MM-DD HH24:MI:SS') AS START_DATETIME,
+			TO_CHAR(END_DATETIME, 'YYYY-MM-DD HH24:MI:SS') AS END_DATETIME,
+			TO_CHAR(START_DATETIME, 'YYYY-MM-DD') AS START_DATE,
+			TO_CHAR(START_DATETIME, 'HH24') AS START_HOUR,
+			TO_CHAR(START_DATETIME, 'MI') AS START_MIN,
+			TO_CHAR(START_DATETIME, 'SS') AS START_SEC,
+			TO_CHAR(END_DATETIME, 'YYYY-MM-DD') AS END_DATE,
+			TO_CHAR(END_DATETIME, 'HH24') AS END_HOUR,
+			TO_CHAR(END_DATETIME, 'MI') AS END_MIN,
+			TO_CHAR(END_DATETIME, 'SS') AS END_SEC,
+<!-- 			TO_CHAR(TO_DATE(START_DATETIME, 'yyyymmddhh24miss'), 'yyyy-mm-dd') AS START_DATE, -->
+<!-- 			TO_CHAR(TO_DATE(END_DATETIME, 'yyyymmddhh24miss'), 'yyyy-mm-dd') AS END_DATE, -->
+<!-- 			SUBSTR(START_DATETIME, -6, 2) AS START_HOUR, -->
+<!-- 			SUBSTR(START_DATETIME, -4, 2) AS START_MIN, -->
+<!-- 			SUBSTR(START_DATETIME, -2, 2) AS START_SEC, -->
+<!-- 			SUBSTR(END_DATETIME, -6, 2) AS END_HOUR, -->
+<!-- 			SUBSTR(END_DATETIME, -4, 2) AS END_MIN, -->
+<!-- 			SUBSTR(END_DATETIME, -2, 2) AS END_SEC, -->
+			TRACE_TYPE,
+			(	SELECT	CODE_NAME
+				FROM	T_NFW_COMMON_CODE
+		 		WHERE	GROUP_CODE = <include refid="com.ntels.avocado.dao.common.CodeDefine.TRACE_TYPE"/>
+		 			AND DETAIL_CODE = T_UDBS_TRACE_REQ.TRACE_TYPE
+			 ) AS TRACE_TYPE_NAME,
+			CONDITION_VALUE,
+			USER_ID,
+			DESCRIPTION
+		FROM 
+			T_UDBS_TRACE_REQ
+		WHERE
+			TRACE_REQ_ID = #{condition.trace_req_id, jdbcType=INTEGER}
+	 </select>
+
+	<select id="list"
+			parameterType="com.ntels.avocado.domain.atom.management.trace.Condition"
+			resultType="com.ntels.avocado.domain.atom.management.trace.TraceReq">
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_header"/>
+		SELECT
+			TRACE_REQ_ID,
+			PACKAGE_ID,
+			SYSTEM_ID, 
+			SERVICE_ID,
+			(SELECT SYSTEM_NAME FROM T_NFW_SYSTEM WHERE SYSTEM_ID = T_UDBS_TRACE_REQ.SYSTEM_ID) AS SYSTEM_NAME,
+			(SELECT PACKAGE_NAME FROM T_NFW_PACKAGE WHERE PACKAGE_ID = T_UDBS_TRACE_REQ.PACKAGE_ID) AS PACKAGE_NAME,
+			(SELECT SERVICE_NAME FROM T_NFW_SERVICE WHERE PACKAGE_ID = T_UDBS_TRACE_REQ.PACKAGE_ID 
+				AND SERVICE_ID = T_UDBS_TRACE_REQ.SERVICE_ID) AS SERVICE_NAME,
+			FILTER_GRP_NM,
+			TO_CHAR(START_DATETIME, 'YYYY-MM-DD HH24:MI:SS') AS START_DATETIME,
+			TO_CHAR(END_DATETIME, 'YYYY-MM-DD HH24:MI:SS') END_DATETIME,
+			(	SELECT	CODE_NAME
+				FROM	T_NFW_COMMON_CODE
+		 		WHERE	GROUP_CODE = <include refid="com.ntels.avocado.dao.common.CodeDefine.TRACE_TYPE"/>
+		 			AND DETAIL_CODE = T_UDBS_TRACE_REQ.TRACE_TYPE
+			 ) AS TRACE_TYPE,
+			CONDITION_VALUE,
+			USER_ID,
+			DESCRIPTION
+		FROM
+			T_UDBS_TRACE_REQ
+		<include refid="condition"/>
+		ORDER BY TRACE_REQ_ID DESC
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_footer"/>
+	 </select>
+
+	<select id="count"
+			parameterType="com.ntels.avocado.domain.atom.management.trace.Condition"
+			resultType="int">
+		SELECT
+			count(0)
+		FROM 
+			T_UDBS_TRACE_REQ
+		<include refid="condition"/>
+	</select>
+
+	<resultMap id="traceReqResult" type="com.ntels.avocado.domain.atom.management.trace.TraceReq"></resultMap>
+
+	<select id="trace_procedure" statementType="CALLABLE"
+			parameterType="com.ntels.avocado.domain.atom.management.trace.TraceReq">
+		{ CALL UP_TRACE_REQ(
+				#{traceReq.table_cmd, mode=IN, jdbcType=CHAR, javaType=string},
+				#{traceReq.trace_req_id, mode=IN, jdbcType=INTEGER, javaType=Integer},
+				#{traceReq.package_id, mode=IN, jdbcType=CHAR, javaType=string},
+				#{traceReq.system_id, mode=IN, jdbcType=CHAR, javaType=string},
+				#{traceReq.service_id, mode=IN, jdbcType=CHAR, javaType=string},
+				#{traceReq.filter_grp_nm, mode=IN, jdbcType=VARCHAR, javaType=string},
+				#{traceReq.trace_type, mode=IN, jdbcType=CHAR, javaType=string},
+				#{traceReq.condition_value, mode=IN, jdbcType=VARCHAR, javaType=string},
+				#{traceReq.end_datetime, mode=IN, jdbcType=VARCHAR, javaType=string},
+				#{traceReq.user_id, mode=IN, jdbcType=VARCHAR, javaType=string},
+				#{traceReq.description, mode=IN, jdbcType=VARCHAR, javaType=string},
+				#{traceReq.result, mode=OUT, jdbcType=INTEGER, javaType=Integer, resultMap=traceReqResult}
+			) }
+     </select>
+
+	<update id="updateEnd_datetime" 
+			parameterType="String">
+		UPDATE 
+			T_UDBS_TRACE_REQ
+		SET  	
+			END_DATETIME = SYSDATE
+		WHERE
+			TRACE_REQ_ID = #{trace_req_id, jdbcType=INTEGER}
+     </update>
+
+	<select id="listExcel"
+			parameterType="com.ntels.avocado.domain.atom.management.trace.Condition"
+			resultType="org.apache.commons.collections.map.CaseInsensitiveMap">
+		SELECT
+			(SELECT SYSTEM_NAME FROM T_NFW_SYSTEM WHERE SYSTEM_ID = T_UDBS_TRACE_REQ.SYSTEM_ID) AS "SYSTEM_ID",
+			(SELECT PACKAGE_NAME FROM T_NFW_PACKAGE WHERE PACKAGE_ID = T_UDBS_TRACE_REQ.PACKAGE_ID) AS "PACKAGE_ID",
+			(SELECT SERVICE_NAME FROM T_NFW_SERVICE WHERE PACKAGE_ID = T_UDBS_TRACE_REQ.PACKAGE_ID 
+				AND SERVICE_ID = T_UDBS_TRACE_REQ.SERVICE_ID) AS "SERVICE_ID",
+			TRACE_REQ_ID "TRACE_REQ_ID",
+			(	SELECT	CODE_NAME
+				FROM	T_NFW_COMMON_CODE
+		 		WHERE	GROUP_CODE = <include refid="com.ntels.avocado.dao.common.CodeDefine.TRACE_TYPE"/>
+		 			AND DETAIL_CODE = T_UDBS_TRACE_REQ.TRACE_TYPE
+			 ) AS "TRACE_TYPE",
+			CONDITION_VALUE "CONDITION_VALUE",
+			TO_CHAR(START_DATETIME, 'YYYY-MM-DD HH24:MI:SS') AS "START_DATETIME",
+			TO_CHAR(END_DATETIME, 'YYYY-MM-DD HH24:MI:SS') "END_DATETIME",
+			USER_ID "USER_ID",
+			DESCRIPTION "DESCRIPTION"
+		FROM
+			T_UDBS_TRACE_REQ
+		<include refid="condition"/>
+		ORDER BY TRACE_REQ_ID DESC
+	 </select>
+
+	<select id="listTraceType" resultType="HashMap">
+		SELECT	DETAIL_CODE AS ID, CODE_NAME AS NAME
+		FROM	T_NFW_COMMON_CODE
+	 	WHERE	GROUP_CODE = <include refid="com.ntels.avocado.dao.common.CodeDefine.TRACE_TYPE"/>
+		ORDER BY DISPLAY_ORDER
+	 </select>
+
+	<sql id="condition">
+		WHERE 1=1
+			<if test="condition.system_id_c != null and condition.system_id_c != 'all'">
+			AND	SYSTEM_ID = #{condition.system_id_c, jdbcType=CHAR}
+			</if>
+			<if test="condition.package_id_c != null and condition.package_id_c != 'all'">
+			AND	PACKAGE_ID = #{condition.package_id_c, jdbcType=CHAR}
+			</if>
+			<if test="condition.service_id_c != null and condition.service_id_c != 'all'">
+			AND	SERVICE_ID = #{condition.service_id_c, jdbcType=CHAR}
+			</if>
+			<if test="condition.condition_value_c != null and condition.condition_value_c != ''">
+			AND	CONDITION_VALUE = #{condition.condition_value_c, jdbcType=VARCHAR}
+			</if>
+			AND	TO_CHAR(START_DATETIME, 'YYYYMMDDHH24MISS') <![CDATA[>=]]>
+					#{condition.start_date_c} || #{condition.start_hour_c} || #{condition.start_min_c} || '00'
+			AND TO_CHAR(START_DATETIME, 'YYYYMMDDHH24MISS') <![CDATA[<=]]>
+					#{condition.end_date_c} || #{condition.end_hour_c} || #{condition.end_min_c} || '59'
+	</sql>
+
+	<select id="getEndDateTime" resultType="String">
+		SELECT	TO_CHAR(SYSDATE + (1/24), 'YYYY-MM-DD HH24MISS')
+		FROM	DUAL
+	 </select>
+	
+</mapper>

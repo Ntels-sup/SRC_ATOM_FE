@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ntels.avocado.dao.atom.management.trace.TraceDetailMapper">
+
+	<select id="listUDR"
+			parameterType="com.ntels.avocado.domain.atom.management.trace.Condition"
+			resultType="HashMap">
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_header"/>
+		SELECT
+<!-- 			(SELECT SYSTEM_NAME FROM T_NFW_SYSTEM WHERE SYSTEM_ID = T_UDBS_TRACE_RES_UDR.SYSTEM_ID) AS SYSTEM_NAME, -->
+<!-- 			(SELECT PACKAGE_NAME FROM T_NFW_PACKAGE WHERE PACKAGE_ID = T_UDBS_TRACE_RES_UDR.PACKAGE_ID) AS PACKAGE_NAME, -->
+<!-- 			(SELECT SERVICE_NAME FROM T_NFW_SERVICE WHERE SERVICE_ID = T_UDBS_TRACE_RES_UDR.SERVICE_ID) AS SERVICE_NAME, -->
+<!-- 			TRACE_REQ_ID, -->
+			RESULT_UDR_ID,
+<!-- 			RESULT_TYPE, -->
+			UDR_ID,
+			UDR_DATA RES_DATA
+		FROM
+			T_UDBS_TRACE_RES_UDR
+		WHERE 1=1
+			AND RESULT_TYPE = #{res_type}
+			AND	TRACE_REQ_ID = #{condition.trace_req_id, jdbcType=INTEGER}
+			<if test="condition.result_udr_id != null and condition.result_udr_id != ''">
+			AND RESULT_UDR_ID = #{condition.result_udr_id}
+			</if>
+		ORDER BY RESULT_UDR_ID
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_footer"/>
+	 </select>
+
+	<select id="countUDR"
+			parameterType="com.ntels.avocado.domain.atom.management.trace.Condition"
+			resultType="int">
+		SELECT
+			count(0)
+		FROM
+			T_UDBS_TRACE_RES_UDR
+		WHERE 1=1
+			AND RESULT_TYPE = #{res_type}
+			AND	TRACE_REQ_ID = #{condition.trace_req_id, jdbcType=INTEGER}
+	</select>
+
+	<select id="listCDR"
+			parameterType="com.ntels.avocado.domain.atom.management.trace.Condition"
+			resultType="HashMap">
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_header"/>
+		SELECT
+<!-- 			(SELECT SYSTEM_NAME FROM T_NFW_SYSTEM WHERE SYSTEM_ID = T_UDBS_TRACE_RES_CDR.SYSTEM_ID) AS SYSTEM_NAME, -->
+<!-- 			(SELECT PACKAGE_NAME FROM T_NFW_PACKAGE WHERE PACKAGE_ID = T_UDBS_TRACE_RES_CDR.PACKAGE_ID) AS PACKAGE_NAME, -->
+<!-- 			(SELECT SERVICE_NAME FROM T_NFW_SERVICE WHERE SERVICE_ID = T_UDBS_TRACE_RES_CDR.SERVICE_ID) AS SERVICE_NAME, -->
+<!-- 			TRACE_REQ_ID, -->
+			RESULT_CDR_ID,
+			RESULT_UDR_ID,
+<!-- 			RESULT_TYPE, -->
+<!-- 			UDR_ID, -->
+			CDR_DATA RES_DATA
+		FROM
+			T_UDBS_TRACE_RES_CDR
+		WHERE 1=1
+			AND RESULT_TYPE = #{res_type}
+			AND	TRACE_REQ_ID = #{condition.trace_req_id, jdbcType=INTEGER}
+			<if test="condition.result_udr_id != null and condition.result_udr_id != ''">
+			AND RESULT_UDR_ID = #{condition.result_udr_id}
+			</if>
+			<if test="condition.udr_id != null and condition.udr_id != ''">
+			AND UDR_ID = #{condition.udr_id}
+			</if>
+		ORDER BY RESULT_UDR_ID
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_footer"/>
+	 </select>
+
+	<select id="countCDR"
+			parameterType="com.ntels.avocado.domain.atom.management.trace.Condition"
+			resultType="int">
+		SELECT
+			count(0)
+		FROM
+			T_UDBS_TRACE_RES_CDR
+		WHERE 1=1
+			AND RESULT_TYPE = #{res_type}
+			AND	TRACE_REQ_ID = #{condition.trace_req_id, jdbcType=INTEGER}
+	</select>
+
+	<select id="listDataFormat"
+			parameterType="com.ntels.avocado.domain.atom.management.trace.Condition"
+			resultType="HashMap">
+		SELECT DISTINCT
+			SEQ_NO ID, FIELD_NAME NAME
+		FROM
+			T_UDBS_DATA_FORMAT
+		WHERE 1=1
+			AND PACKAGE_ID = #{condition.package_id_c, jdbcType=CHAR}
+			AND SYSTEM_ID = #{condition.system_id_c, jdbcType=CHAR}
+			AND SERVICE_ID = #{condition.service_id_c, jdbcType=CHAR}
+			<if test="result_type == 'FB'">
+			AND DATA_NAME = <include refid="com.ntels.avocado.dao.common.CodeDefine.TRACE_RESULT_TYPE_FB"/>
+			</if>
+			<if test="result_type == 'FT'">
+			AND DATA_NAME = <include refid="com.ntels.avocado.dao.common.CodeDefine.TRACE_RESULT_TYPE_FT"/>
+			</if>
+			<if test="res_type == 'UDR'">
+			AND	STRUCTURE_CD = 0
+			</if>
+			<if test="res_type == 'CDR'">
+			AND	STRUCTURE_CD = 1
+			</if>
+		ORDER BY SEQ_NO
+	</select>
+
+	<select id="listUDRExcel"
+			parameterType="com.ntels.avocado.domain.atom.management.trace.Condition"
+			resultType="org.apache.commons.collections.map.CaseInsensitiveMap">
+		SELECT
+			UDR_DATA RES_DATA
+		FROM
+			T_UDBS_TRACE_RES_UDR
+		WHERE 1=1
+			AND RESULT_TYPE = #{res_type}
+			AND	TRACE_REQ_ID = #{condition.trace_req_id, jdbcType=INTEGER}
+		ORDER BY RESULT_UDR_ID DESC
+	 </select>
+
+	<select id="listCDRExcel"
+			parameterType="com.ntels.avocado.domain.atom.management.trace.Condition"
+			resultType="org.apache.commons.collections.map.CaseInsensitiveMap">
+		SELECT
+			CDR_DATA RES_DATA
+		FROM
+			T_UDBS_TRACE_RES_CDR
+		WHERE 1=1
+			AND RESULT_TYPE = #{res_type}
+			AND	TRACE_REQ_ID = #{condition.trace_req_id, jdbcType=INTEGER}
+		ORDER BY RESULT_UDR_ID DESC
+	 </select>
+
+</mapper>

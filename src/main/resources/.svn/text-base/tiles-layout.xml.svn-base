@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE tiles-definitions PUBLIC
+       "-//Apache Software Foundation//DTD Tiles Configuration 2.1//EN"
+       "http://tiles.apache.org/dtds/tiles-config_2_1.dtd">
+       
+<tiles-definitions>
+  	
+  	<!-- exception 따로 잡아야 함. default 쓰면 errorPage="/exception/jstlexception" 부분 때문에 무한 루프돔 	
+  		 exception 예외처리 우선했다. default 아래 있음 먼저 걸려버림 -->
+	<definition name=".exception" template="/WEB-INF/views/template/exception-layout.jsp">
+    	<put-attribute name="body" value="/WEB-INF/views/template/body.jsp" />
+  	</definition>
+  	
+  	<definition name="exception/*" extends=".exception"> <!-- jstl exception -->
+    	<put-attribute name="body" value="/WEB-INF/views/exception/{1}.jsp" />
+  	</definition>
+  	
+  	<definition name="exception.controller" extends=".exception"> <!-- controller exception -->
+    	<put-attribute name="body" value="/WEB-INF/views/exception/exception.jsp" />
+  	</definition>
+  	
+  	<!-- 로그인 -->
+  	<definition name=".login" template="/WEB-INF/views/template/non-layout.jsp">
+    	<put-attribute name="body" value="/WEB-INF/views/template/body.jsp" />
+  	</definition>
+  	
+  	<definition name="atom/login/*" extends=".login"> <!-- login -->
+    	<put-attribute name="body" value="/WEB-INF/views/atom/login/{1}.jsp" />
+  	</definition>
+  	
+  	<definition name=".monitor" template="/WEB-INF/views/template/monitor-layout.jsp">
+    	<put-attribute name="body" value="/WEB-INF/views/template/body.jsp" />
+  	</definition>
+  	
+  	<definition name="atom/monitor/*" extends=".monitor"> <!-- monitor -->
+    	<put-attribute name="body" value="/WEB-INF/views/atom/monitor/{1}.jsp" />
+  	</definition>
+  	
+	<!-- default : 템플릿에 설정된 페이지의 구성 요소에 대한 실제 파일을 지정합니다.  
+		 default를 확장하여 '*' URL로 시작되는 호출이 오는 경우 아래 설정에 의해서 페이지를 만들게 됩니다. -->
+	<definition name=".default" template="/WEB-INF/views/template/default-layout.jsp">
+ 		<put-attribute name="header" value="/WEB-INF/views/template/header.jsp" />
+ 		<put-attribute name="body"  value="/WEB-INF/views/template/body.jsp" />
+ 		<put-attribute name="footer" value="/WEB-INF/views/template/footer.jsp" />
+	</definition>	
+    <definition name="atom/*/*/*/*/*" extends=".default">
+   		<put-attribute name="body" value="/WEB-INF/views/atom/{1}/{2}/{3}/{4}/{5}.jsp" />
+    </definition>
+    <definition name="atom/*/*/*/*" extends=".default">
+    	<put-attribute name="body" value="/WEB-INF/views/atom/{1}/{2}/{3}/{4}.jsp" />
+    </definition>
+    <definition name="atom/*/*/*" extends=".default">
+    	<put-attribute name="body" value="/WEB-INF/views/atom/{1}/{2}/{3}.jsp" />
+    </definition>
+	<definition name="atom/*/*" extends=".default">
+    	<put-attribute name="body" value="/WEB-INF/views/atom/{1}/{2}.jsp" />
+    </definition>
+	<definition name="atom/*" extends=".default">
+ 		<put-attribute name="body" value="/WEB-INF/views/atom/{1}.jsp" />
+	</definition>
+	<definition name="main/*" extends=".default">
+ 		<put-attribute name="body" value="/WEB-INF/views/main/{1}.jsp" />
+	</definition>
+	
+  	<!-- 팝업처럼 default 없는 경우는 그냥 만들면 됨.
+  		 tiles 쓸 필요가 없다. -->
+  		 
+</tiles-definitions>
+

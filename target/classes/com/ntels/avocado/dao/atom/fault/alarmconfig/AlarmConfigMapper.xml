@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ntels.avocado.dao.atom.fault.alarmconfig.AlarmConfigMapper">
+
+	<select id="count" resultType="int">
+		SELECT COUNT(*)
+		  FROM TAT_ALM_CODE_DEF 
+		 WHERE 1=1
+		   <if test="condition.alarmType != '' and condition.alarmType != null">
+		   AND TYPE_CCD IN (${condition.alarmType})
+		   </if>
+		   <if test="condition.alarmGroup != '' and condition.alarmGroup != null">
+		   AND GROUP_CCD IN (${condition.alarmGroup})
+		   </if>
+		   <if test="condition.pkgNameArr != 'all' and condition.pkgNameArr != '' and condition.pkgNameArr != null">
+		   AND PKG_NAME IN
+			   <foreach collection="condition.pkgNameArr" item ="pkgNameArr" index="index"   open="(" separator="," close=")" >
+			   #{pkgNameArr, jdbcType=VARCHAR}
+			   </foreach>
+		   </if>
+		   <if test="condition.code != '' and condition.code != null">
+		   AND CODE LIKE CONCAT('%', #{condition.code , jdbcType=CHAR}, '%')
+		   </if>
+		   <if test="condition.probable_cause != '' and condition.probable_cause != null">
+		   AND PROBABLE_CAUSE LIKE CONCAT('%', #{condition.probable_cause , jdbcType=CHAR}, '%')
+		   </if>
+		   <if test="condition.description != '' and condition.description != null">
+		   AND DESCRIPTION LIKE CONCAT('%', #{condition.description , jdbcType=CHAR}, '%')
+		   </if>
+	</select>
+
+	<select id="list" resultType="com.ntels.avocado.domain.atom.fault.alarmconfig.AlarmConfigDomain">
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_header" />
+		SELECT CODE 
+		     , PKG_NAME
+		     , ALARM_YN
+		     , DESCRIPTION
+		     , PROBABLE_CAUSE
+		     , ALIAS_CODE
+		     , SEVERITY_CCD
+		     , (SELECT CODE_NAME 
+		          FROM TAT_COMMON_CODE
+		         WHERE 1=1
+		           AND SEVERITY_CCD = DETAIL_CD
+		           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_ALARM_SEVERITY_CODE"/>) AS SEVERITY_CCD_NAME
+		     , GROUP_CCD
+		     , (SELECT CODE_NAME 
+		          FROM TAT_COMMON_CODE
+		         WHERE 1=1
+		           AND GROUP_CCD = DETAIL_CD
+		           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_ALARM_GROUP_CODE"/>) AS GROUP_CCD_NAME
+		     , TYPE_CCD
+		     , (SELECT CODE_NAME 
+		          FROM TAT_COMMON_CODE
+		         WHERE 1=1
+		           AND TYPE_CCD = DETAIL_CD
+		           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_ALARM_TYPE_CODE"/>) AS TYPE_CCD_NAME
+		  FROM TAT_ALM_CODE_DEF
+		 WHERE 1=1
+		   <if test="condition.alarmType != '' and condition.alarmType != null">
+		   AND TYPE_CCD IN (${condition.alarmType})
+		   </if>
+		   <if test="condition.alarmGroup != '' and condition.alarmGroup != null">
+		   AND GROUP_CCD IN (${condition.alarmGroup})
+		   </if>
+		   <if test="condition.pkgNameArr != '' and condition.pkgNameArr != null">
+		   AND PKG_NAME IN
+			   <foreach collection="condition.pkgNameArr" item ="pkgNameArr" index="index"   open="(" separator="," close=")" >
+			   #{pkgNameArr, jdbcType=VARCHAR}
+			   </foreach>
+		   </if>
+		   <if test="condition.code != '' and condition.code != null">
+		   AND CODE LIKE CONCAT('%', #{condition.code , jdbcType=CHAR}, '%')
+		   </if>
+		   <if test="condition.probable_cause != '' and condition.probable_cause != null">
+		   AND PROBABLE_CAUSE LIKE CONCAT('%', #{condition.probable_cause , jdbcType=CHAR}, '%')
+		   </if>
+		   <if test="condition.description != '' and condition.description != null">
+		   AND DESCRIPTION LIKE CONCAT('%', #{condition.description , jdbcType=CHAR}, '%')
+		   </if>
+		 <if test="condition.orderBy != '' and condition.orderBy != null">
+		 ORDER BY ${condition.orderBy}
+		 </if>
+		 <if test="condition.orderBy == '' or condition.orderBy == null">
+		 ORDER BY CODE, PROBABLE_CAUSE, TYPE_CCD, GROUP_CCD DESC 
+		 </if>
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_footer" />
+	</select>
+	
+	<select id="detail" resultType="com.ntels.avocado.domain.atom.fault.alarmconfig.AlarmConfigDomain">
+		SELECT CODE 
+		     , PKG_NAME
+		     , ALARM_YN
+		     , DESCRIPTION
+		     , PROBABLE_CAUSE
+		     , ALIAS_CODE
+		     , SEVERITY_CCD
+		     , (SELECT CODE_NAME 
+		          FROM TAT_COMMON_CODE
+		         WHERE 1=1
+		           AND SEVERITY_CCD = DETAIL_CD
+		           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_ALARM_SEVERITY_CODE"/>) AS SEVERITY_CCD_NAME
+		     , GROUP_CCD
+		     , (SELECT CODE_NAME 
+		          FROM TAT_COMMON_CODE
+		         WHERE 1=1
+		           AND GROUP_CCD = DETAIL_CD
+		           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_ALARM_GROUP_CODE"/>) AS GROUP_CCD_NAME
+		     , TYPE_CCD
+		     , (SELECT CODE_NAME 
+		          FROM TAT_COMMON_CODE
+		         WHERE 1=1
+		           AND TYPE_CCD = DETAIL_CD
+		           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_ALARM_TYPE_CODE"/>) AS TYPE_CCD_NAME
+		     , SNMP_YN
+		     , (SELECT CODE_NAME 
+		          FROM TAT_COMMON_CODE
+		         WHERE 1=1
+		           AND SNMP_YN = DETAIL_CD
+		           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_GROUP_CODE_YN"/>) AS SNMP_YN_NAME
+		     , SMS_YN
+		     , (SELECT CODE_NAME 
+		          FROM TAT_COMMON_CODE
+		         WHERE 1=1
+		           AND SMS_YN = DETAIL_CD
+		           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_GROUP_CODE_YN"/>) AS SMS_YN_NAME
+		     , EMAIL_YN
+		     , (SELECT CODE_NAME 
+		          FROM TAT_COMMON_CODE
+		         WHERE 1=1
+		           AND EMAIL_YN = DETAIL_CD
+		           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_GROUP_CODE_YN"/>) AS EMAIL_YN_NAME
+		  FROM TAT_ALM_CODE_DEF
+		 WHERE 1=1
+		   AND CODE = #{condition.code}
+		   AND PKG_NAME = #{condition.pkg_name}
+	</select>
+	
+	<update id="modifyAction" parameterType="com.ntels.avocado.domain.atom.fault.alarmconfig.AlarmConfigDomain">
+		UPDATE TAT_ALM_CODE_DEF
+		   SET ALIAS_CODE = #{condition.alias_code}
+		     , PROBABLE_CAUSE = #{condition.probable_cause}
+		     , GROUP_CCD = #{condition.group_ccd}
+		     , SEVERITY_CCD = #{condition.severity_ccd}
+		     , SNMP_YN = #{condition.snmp_yn}
+		     , SMS_YN = #{condition.sms_yn}
+		     , EMAIL_YN = #{condition.email_yn}
+		     , DESCRIPTION = #{condition.description}
+		 WHERE 1=1
+		   AND CODE = #{condition.code}
+		   AND PKG_NAME = #{condition.pkg_name}
+	</update>
+	
+	<select id="listExcel" resultType="java.util.LinkedHashMap">
+		SELECT PKG_NAME AS 'Package'
+		     , ALIAS_CODE AS 'Alarm Code' 
+		     , PROBABLE_CAUSE AS 'Probable Cause'
+		     , DESCRIPTION AS 'Description'
+		     , (SELECT CODE_NAME 
+		          FROM TAT_COMMON_CODE
+		         WHERE 1=1
+		           AND TYPE_CCD = DETAIL_CD
+		           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_ALARM_TYPE_CODE"/>) AS 'Type'
+		     , (SELECT CODE_NAME 
+		          FROM TAT_COMMON_CODE
+		         WHERE 1=1
+		           AND GROUP_CCD = DETAIL_CD
+		           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_ALARM_GROUP_CODE"/>) AS 'Group'
+		  FROM TAT_ALM_CODE_DEF
+		 WHERE 1=1
+		   <if test="condition.alarmType != '' and condition.alarmType != null">
+		   AND TYPE_CCD IN (${condition.alarmType})
+		   </if>
+		   <if test="condition.alarmGroup != '' and condition.alarmGroup != null">
+		   AND GROUP_CCD IN (${condition.alarmGroup})
+		   </if>
+		   <if test="condition.pkgNameArr != '' and condition.pkgNameArr != null">
+		   AND PKG_NAME IN
+			   <foreach collection="condition.pkgNameArr" item ="pkgNameArr" index="index"   open="(" separator="," close=")" >
+			   #{pkgNameArr, jdbcType=VARCHAR}
+			   </foreach>
+		   </if>
+		   <if test="condition.code != '' and condition.code != null">
+		   AND CODE LIKE CONCAT('%', #{condition.code , jdbcType=CHAR}, '%')
+		   </if>
+		   <if test="condition.probable_cause != '' and condition.probable_cause != null">
+		   AND PROBABLE_CAUSE LIKE CONCAT('%', #{condition.probable_cause , jdbcType=CHAR}, '%')
+		   </if>
+		   <if test="condition.description != '' and condition.description != null">
+		   AND DESCRIPTION LIKE CONCAT('%', #{condition.description , jdbcType=CHAR}, '%')
+		   </if>
+		 <if test="condition.orderBy != '' and condition.orderBy != null">
+		 ORDER BY ${condition.orderBy}
+		 </if>
+		 <if test="condition.orderBy == '' or condition.orderBy == null">
+		 ORDER BY CODE, PROBABLE_CAUSE, TYPE_CCD, GROUP_CCD DESC 
+		 </if>
+	</select>
+	
+</mapper>

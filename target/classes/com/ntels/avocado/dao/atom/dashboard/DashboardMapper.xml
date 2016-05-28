@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ntels.avocado.dao.atom.dashboard.DashboardMapper">
+    <!-- * Alarm Total 카운트 조회 -->
+    <select id="getTotalAlarm" databaseId="mysql"
+                                  resultType="com.ntels.avocado.domain.atom.dashboard.AlarmTotal">
+		SELECT  CRITICAL
+		       ,MAJOR
+		       ,MINOR
+		       ,FAULT
+		       ,(CRITICAL+MAJOR+MINOR+FAULT) TOTAL
+		FROM ( SELECT (SELECT COUNT(*) FROM TAT_ALM_STATUS WHERE SEVERITY_CCD = 1) AS CRITICAL
+		             ,(SELECT COUNT(*) FROM TAT_ALM_STATUS WHERE SEVERITY_CCD = 2) AS MAJOR
+		             ,(SELECT COUNT(*) FROM TAT_ALM_STATUS WHERE SEVERITY_CCD = 3) AS MINOR
+		             ,(SELECT COUNT(*) FROM TAT_ALM_STATUS WHERE SEVERITY_CCD = 6) AS FAULT
+		         FROM DUAL    
+		      ) ALM_SE
+    </select>
+    
+    
+    <select id="getAlarmChart" databaseId="mysql"
+                                  resultType="com.ntels.avocado.domain.atom.dashboard.AlarmChart">    
+       SELECT (SELECT CODE_NAME   
+		             FROM TAT_COMMON_CODE
+		            WHERE 1=1
+          		    AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_ALARM_GROUP_CODE"/>
+                  AND DETAIL_CD = 1 )                                                        AS ALARM_GROUP
+             ,(SELECT COUNT(*) FROM TAT_ALM_STATUS WHERE SEVERITY_CCD = 1 AND GROUP_CCD = 1) AS CRITICAL
+             ,(SELECT COUNT(*) FROM TAT_ALM_STATUS WHERE SEVERITY_CCD = 2 AND GROUP_CCD = 1) AS MAJOR
+             ,(SELECT COUNT(*) FROM TAT_ALM_STATUS WHERE SEVERITY_CCD = 3 AND GROUP_CCD = 1) AS MINOR
+             ,(SELECT COUNT(*) FROM TAT_ALM_STATUS WHERE SEVERITY_CCD = 6 AND GROUP_CCD = 1) AS FAULT
+       FROM DUAL    
+       UNION ALL
+       SELECT (SELECT CODE_NAME   
+		             FROM TAT_COMMON_CODE
+		            WHERE 1=1
+          		    AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_ALARM_GROUP_CODE"/>
+                  AND DETAIL_CD = 2 )                                                        AS ALARM_GROUP
+             ,(SELECT COUNT(*) FROM TAT_ALM_STATUS WHERE SEVERITY_CCD = 1 AND GROUP_CCD = 2) AS CRITICAL
+             ,(SELECT COUNT(*) FROM TAT_ALM_STATUS WHERE SEVERITY_CCD = 2 AND GROUP_CCD = 2) AS MAJOR
+             ,(SELECT COUNT(*) FROM TAT_ALM_STATUS WHERE SEVERITY_CCD = 3 AND GROUP_CCD = 2) AS MINOR
+             ,(SELECT COUNT(*) FROM TAT_ALM_STATUS WHERE SEVERITY_CCD = 6 AND GROUP_CCD = 2) AS FAULT
+       FROM DUAL
+       UNION ALL
+       SELECT (SELECT CODE_NAME   
+		             FROM TAT_COMMON_CODE
+		            WHERE 1=1
+          		    AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_ALARM_GROUP_CODE"/>
+                  AND DETAIL_CD = 3 )                                                        AS ALARM_GROUP
+             ,(SELECT COUNT(*) FROM TAT_ALM_STATUS WHERE SEVERITY_CCD = 1 AND GROUP_CCD = 3) AS CRITICAL
+             ,(SELECT COUNT(*) FROM TAT_ALM_STATUS WHERE SEVERITY_CCD = 2 AND GROUP_CCD = 3) AS MAJOR
+             ,(SELECT COUNT(*) FROM TAT_ALM_STATUS WHERE SEVERITY_CCD = 3 AND GROUP_CCD = 3) AS MINOR
+             ,(SELECT COUNT(*) FROM TAT_ALM_STATUS WHERE SEVERITY_CCD = 6 AND GROUP_CCD = 3) AS FAULT
+       FROM DUAL
+       UNION ALL
+       SELECT (SELECT CODE_NAME   
+		             FROM TAT_COMMON_CODE
+		            WHERE 1=1
+          		    AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_ALARM_GROUP_CODE"/>
+                  AND DETAIL_CD = 4 )                                                        AS ALARM_GROUP
+             ,(SELECT COUNT(*) FROM TAT_ALM_STATUS WHERE SEVERITY_CCD = 1 AND GROUP_CCD = 4) AS CRITICAL
+             ,(SELECT COUNT(*) FROM TAT_ALM_STATUS WHERE SEVERITY_CCD = 2 AND GROUP_CCD = 4) AS MAJOR
+             ,(SELECT COUNT(*) FROM TAT_ALM_STATUS WHERE SEVERITY_CCD = 3 AND GROUP_CCD = 4) AS MINOR
+             ,(SELECT COUNT(*) FROM TAT_ALM_STATUS WHERE SEVERITY_CCD = 6 AND GROUP_CCD = 4) AS FAULT
+       FROM DUAL
+       UNION ALL
+       SELECT (SELECT CODE_NAME   
+		             FROM TAT_COMMON_CODE
+		            WHERE 1=1
+          		    AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_ALARM_GROUP_CODE"/>
+                  AND DETAIL_CD = 5 )                                                        AS ALARM_GROUP
+             ,(SELECT COUNT(*) FROM TAT_ALM_STATUS WHERE SEVERITY_CCD = 1 AND GROUP_CCD = 5) AS CRITICAL
+             ,(SELECT COUNT(*) FROM TAT_ALM_STATUS WHERE SEVERITY_CCD = 2 AND GROUP_CCD = 5) AS MAJOR
+             ,(SELECT COUNT(*) FROM TAT_ALM_STATUS WHERE SEVERITY_CCD = 3 AND GROUP_CCD = 5) AS MINOR
+             ,(SELECT COUNT(*) FROM TAT_ALM_STATUS WHERE SEVERITY_CCD = 6 AND GROUP_CCD = 5) AS FAULT
+       FROM DUAL
+       UNION ALL
+       SELECT (SELECT CODE_NAME   
+		             FROM TAT_COMMON_CODE
+		            WHERE 1=1
+          		    AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_ALARM_GROUP_CODE"/>
+                  AND DETAIL_CD = 7 )                                                        AS ALARM_GROUP
+             ,(SELECT COUNT(*) FROM TAT_ALM_STATUS WHERE SEVERITY_CCD = 1 AND GROUP_CCD = 7) AS CRITICAL
+             ,(SELECT COUNT(*) FROM TAT_ALM_STATUS WHERE SEVERITY_CCD = 2 AND GROUP_CCD = 7) AS MAJOR
+             ,(SELECT COUNT(*) FROM TAT_ALM_STATUS WHERE SEVERITY_CCD = 3 AND GROUP_CCD = 7) AS MINOR
+             ,(SELECT COUNT(*) FROM TAT_ALM_STATUS WHERE SEVERITY_CCD = 6 AND GROUP_CCD = 7) AS FAULT
+       FROM DUAL
+    </select>    
+    
+    
+    <!-- * ReleaseLog  조회 -->
+    <select id="getReleaseLog" databaseId="mysql"
+                                  resultType="com.ntels.avocado.domain.atom.dashboard.ReleaseLog">
+		SELECT  PKG_NAME
+		       ,PKG_VERSION
+		       ,DATE_FORMAT(RELEASE_DATE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{language})) AS RELEASE_DATE
+		       ,DATE_FORMAT(PATCH_DATE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{language})) AS PATCH_DATE
+		 FROM(
+		      SELECT A.*
+		            ,(CASE @vPKG_NAME WHEN A.PKG_NAME THEN @rownum:=@rownum+1 ELSE @rownum:=1 END) RANK
+		            ,(@vPKG_NAME:=A.PKG_NAME) vPKG_NAME
+		      FROM TAT_RELEASE_HIST A ,(SELECT @vPKG_NAME:='',@rownum:=0 FROM DUAL) B
+		      ORDER BY A.PKG_NAME , A.PRC_DATE DESC
+		      ) TAT_RELEASE
+		      WHERE RANK <![CDATA[<]]> 3
+		      ORDER BY PKG_NAME ASC , RANK ASC
+    </select>
+    
+    
+    
+    
+</mapper>    

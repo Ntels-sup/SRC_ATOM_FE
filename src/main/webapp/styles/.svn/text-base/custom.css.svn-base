@@ -1,0 +1,8 @@
+.data .tbl_list tr.act td{background:#cccccc;}
+.data .tbl_list tr.act:hover td{background:#dddddd;}
+.data .tbl_header th:first-child{border-left:0px;}
+.data .tbl_header th:last-child{padding:0 15px 0 25px;}
+.data .tbl_header th{border-left: 1px solid rgba(147,152,157,.15);border-bottom:1px solid #c9ccce;}
+.data .tbl_header{width:calc(100% - 10px);}
+div.listData{border-top:1px solid #93989d;border-bottom:1px solid #c9ccce;background:#dfe1e2;}
+.ms-drop ul{overflow : auto;}

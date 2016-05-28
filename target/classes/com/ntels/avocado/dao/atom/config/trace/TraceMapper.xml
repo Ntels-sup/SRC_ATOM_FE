@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ntels.avocado.dao.atom.config.trace.TraceMapper">
+	<!-- 
+		* 시스템 정보
+		 -->
+	<select id="listSystem" resultType="hashmap">
+		SELECT 
+		    SYSTEM_ID AS ID, SYSTEM_NAME AS NAME
+		FROM
+		    T_NFW_SYSTEM
+		WHERE
+		    USE_YN = 'Y' AND EXTERNAL_YN = 'N'
+		ORDER BY SYSTEM_NAME LIMIT 1
+    </select>
+	
+	<!-- 서비스 정보 -->
+	<!-- T_NFW_PROCESS 의 CO를 기준으로 서비스 찾기 -->
+	<select id="listService" resultType="hashmap">
+		<!-- SELECT SERVICE_ID AS ID
+             , SERVICE_NAME AS NAME
+            FROM T_NFW_SERVICE
+           WHERE PACKAGE_ID = <include refid="com.ntels.avocado.dao.common.CodeDefine.OFCS_COMMON_CONSTANTS_PACKAGE_ID_FOR_SERVICE"/>
+             AND SYSTEM_ID = #{system_id}
+             AND SERVICE_ID <![CDATA[<>]]> <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_SERVICE_CODE"/>
+          ORDER BY SERVICE_NAME ASC -->
+   		SELECT B.SERVICE_ID AS ID
+   		     , B.SERVICE_NAME AS NAME
+   		    FROM (SELECT PACKAGE_ID
+   		               , SYSTEM_ID
+   		               , SERVICE_ID 
+   		              FROM T_NFW_PROCESS 
+   		             WHERE PACKAGE_ID = <include refid="com.ntels.avocado.dao.common.CodeDefine.OFCS_COMMON_CONSTANTS_PACKAGE_ID_FOR_SERVICE"/>
+   		               AND SYSTEM_ID = #{system_id}
+   		               AND COMPONENT_TYPE = 'CO' 
+   		               AND USE_YN = 'Y' 
+   		           GROUP BY SERVICE_ID
+   		         ) A
+   		       , T_NFW_SERVICE B
+           WHERE A.PACKAGE_ID = B.PACKAGE_ID 
+             AND A.SYSTEM_ID = B.SYSTEM_ID 
+             AND A.SERVICE_ID = B.SERVICE_ID       
+         ORDER BY SERVICE_NAME ASC
+    </select>
+    
+    <select id="listTopService" resultType="hashmap">
+		SELECT SERVICE_ID AS ID
+             , SERVICE_NAME AS NAME
+            FROM T_NFW_SERVICE
+           WHERE PACKAGE_ID = <include refid="com.ntels.avocado.dao.common.CodeDefine.OFCS_COMMON_CONSTANTS_PACKAGE_ID_FOR_SERVICE"/>
+             AND SYSTEM_ID = #{system_id}
+             AND SERVICE_ID <![CDATA[<>]]> <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_SERVICE_CODE"/>
+          ORDER BY SERVICE_NAME ASC LIMIT 1
+    </select>
+    
+	<!-- 
+		* 전송 타입 정보
+		 -->
+	<select id="listSendType" resultType="hashmap">
+		SELECT DETAIL_CODE AS ID
+		     , CODE_NAME AS NAME 
+		    FROM T_NFW_COMMON_CODE 
+		   WHERE GROUP_CODE = '100028'
+		  ORDER BY DISPLAY_ORDER
+    </select>
+    
+	<!-- 
+		* 프로토콜 정보
+		 -->
+	<select id="listProtocol" resultType="hashmap">
+		SELECT APPLICATION_ID AS ID
+		     , 'Diameter' AS NAME 
+		    FROM T_NFW_APPLICATION 
+		   WHERE PACKAGE_ID = '01' 
+		     AND APP_TYPE = 'O' 
+		     AND COMPONENT_TYPE = 'CO'
+             AND APP_NAME LIKE '%DIA'
+        UNION ALL
+        SELECT APPLICATION_ID AS ID
+             , 'GTP' AS NAME 
+            FROM T_NFW_APPLICATION 
+           WHERE PACKAGE_ID = '01' 
+             AND APP_TYPE = 'O' 
+             AND COMPONENT_TYPE = 'CO'
+             AND APP_NAME LIKE '%GTP'
+    </select>
+	
+	<!-- 
+		* 최상위 프로세스 정보 1개 가져오기
+		 -->
+	<select id="listTopProcess" resultType="hashmap">
+		SELECT * FROM (
+				SELECT B.SERVICE_ID AS SERVICE_ID
+				     , B.PROCESS_ID AS PROCESS_ID 
+				    FROM T_NFW_APPLICATION A
+				       , T_NFW_PROCESS B 
+				   WHERE A.APPLICATION_ID = B.APPLICATION_ID
+		             AND A.PACKAGE_ID = '01' 
+		             AND A.APP_TYPE = 'O' 
+		             AND A.COMPONENT_TYPE = 'CO'
+		             AND B.USE_YN = 'Y' 
+		             AND B.SERVICE_ID = #{service_id} 
+		             <!-- AND (A.APP_NAME LIKE '%GTP' OR A.APP_NAME LIKE '%DIA') -->
+		          ORDER BY B.PROCESS_NAME
+		 ) TBL LIMIT 1
+    </select>
+    
+	<!-- 
+		* 프로세스 정보
+		 -->
+	<select id="listProcess" resultType="hashmap">
+		SELECT B.PROCESS_ID AS ID
+		     , B.PROCESS_NAME AS NAME 
+		    FROM T_NFW_APPLICATION A
+		       , T_NFW_PROCESS B 
+		   WHERE A.APPLICATION_ID = B.APPLICATION_ID
+             AND A.PACKAGE_ID = '01' 
+             AND A.APP_TYPE = 'O' 
+             AND A.COMPONENT_TYPE = 'CO'
+             AND B.USE_YN = 'Y' 
+             AND B.SERVICE_ID = #{service_id} 
+             <!-- AND (A.APP_NAME LIKE '%GTP' OR A.APP_NAME LIKE '%DIA') -->
+          ORDER BY B.PROCESS_NAME
+    </select>
+	
+	<!-- 
+		* 프로세스 정보
+		 -->
+	<!-- <select id="listProcessNull" resultType="hashmap">
+		SELECT B.PROCESS_ID AS ID
+		     , B.PROCESS_NAME AS NAME 
+		    FROM T_NFW_APPLICATION A
+		       , T_NFW_PROCESS B 
+		   WHERE A.APPLICATION_ID = B.APPLICATION_ID
+             AND A.PACKAGE_ID = '01' 
+             AND A.APP_TYPE = 'O' 
+             AND A.COMPONENT_TYPE = 'CO'
+             AND B.USE_YN = 'Y' 
+             AND B.SERVICE_ID = (SELECT SERVICE_ID 
+                                     FROM T_NFW_SERVICE
+                                    WHERE PACKAGE_ID = <include refid="com.ntels.avocado.dao.common.CodeDefine.OFCS_COMMON_CONSTANTS_PACKAGE_ID_FOR_SERVICE"/>
+                                      AND SYSTEM_ID = #{system_id}
+                                      AND SERVICE_ID <![CDATA[<>]]> <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_SERVICE_CODE"/>
+                                   ORDER BY SERVICE_NAME ASC LIMIT 1
+                                 )
+          ORDER BY B.PROCESS_NAME
+    </select> -->
+    
+	<!-- 
+		* Diameter 노드 정보
+		 -->
+	<select id="listDiameterNode" resultType="hashmap">
+		SELECT '*' AS ID
+		     , 'All' AS NAME 
+		    FROM DUAL
+        UNION
+        SELECT HOST_ID AS ID
+             , HOST_ID AS NAME 
+            FROM T_MDF_CO_DIA_PEER_TABLE 
+          
+    </select>
+	
+	<!-- 
+		* Gtp 노드 정보
+		 -->
+	<select id="listGtpNode" resultType="hashmap">
+		SELECT '*' AS ID
+		     , 'All' AS NAME 
+		    FROM DUAL
+        UNION
+        SELECT HOST_NAME AS ID
+             , HOST_NAME AS NAME 
+            FROM T_NFW_SYSTEM 
+           WHERE USE_YN = 'Y' 
+             AND EXTERNAL_YN = 'Y' 
+             AND SYSTEM_TYPE = 'INPUT'
+             AND SYSTEM_INFO = 'GTP'
+    </select>
+    
+    <!-- 
+		* All 노드 정보
+		 -->
+    <!-- <select id="listAllNode" resultType="hashmap">
+		SELECT '*' AS ID
+		     , 'All' AS NAME 
+		    FROM DUAL
+    </select> -->
+    
+	<!-- 
+		* Diameter 타입 정보
+		 -->
+	<select id="listDiameterType" resultType="hashmap">
+		SELECT DETAIL_CODE AS ID
+		     , CODE_NAME AS NAME 
+		    FROM T_NFW_COMMON_CODE 
+		   WHERE GROUP_CODE = '100029'
+    </select>
+    
+    <!-- 
+		* GTP 타입 정보
+		 -->
+    <select id="listGtpType" resultType="hashmap">
+		SELECT DETAIL_CODE AS ID
+		     , CODE_NAME AS NAME 
+		    FROM T_NFW_COMMON_CODE 
+		   WHERE GROUP_CODE = '100030'
+    </select>
+    
+    <!-- 
+		* All 타입 정보
+		 -->
+    <!-- <select id="listAllType" resultType="hashmap">
+		SELECT DETAIL_CODE AS ID
+		     , CODE_NAME AS NAME 
+		    FROM T_NFW_COMMON_CODE 
+		   WHERE GROUP_CODE = '100033'
+    </select> -->
+    
+    
+    <!-- 
+		* 프로세스 GTP 노드 정보
+		 -->
+    <select id="listProcessGtpNode" resultType="hashmap">
+    	SELECT '*' AS ID
+		     , 'All' AS NAME 
+		    FROM DUAL
+        UNION
+    	SELECT NODE_NAME AS NAME
+             , NODE_NAME AS ID
+            FROM T_MDF_CO_GTP_PEER_TABLE 
+           WHERE SYSTEM_ID = #{system_id}
+             AND SERVICE_ID = #{service_id} 
+		     AND PROCESS_ID = #{process_id}     
+        <!-- SELECT NODE_NAME AS NAME
+		     , NODE_NAME AS ID  
+		    FROM (SELECT B.SERVICE_ID
+		               , B.PROCESS_ID 
+		              FROM T_NFW_APPLICATION A
+		                 , T_NFW_PROCESS B 
+		             WHERE A.APPLICATION_ID = B.APPLICATION_ID
+                       AND A.PACKAGE_ID = '01' 
+                       AND A.APP_TYPE = 'O' 
+                       AND A.COMPONENT_TYPE = 'CO'
+                       AND B.USE_YN = 'Y' 
+                       AND A.APP_NAME LIKE '%GTP'
+                 ) A,
+                 (SELECT NODE_NAME
+                       , SERVICE_ID
+                       , PROCESS_ID
+		              FROM T_MDF_CO_GTP_PEER_TABLE 
+		             WHERE SYSTEM_ID = #{system_id} 
+		         ) B
+           WHERE A.SERVICE_ID = B.SERVICE_ID
+             AND A.PROCESS_ID = B.PROCESS_ID -->
+             
+    </select>
+    
+    <!-- 
+		* 프로세스 Diameter 노드 정보
+		 -->
+    <select id="listProcessDiaNode" resultType="hashmap">
+    	SELECT '*' AS ID
+		     , 'All' AS NAME 
+		    FROM DUAL
+        UNION
+		SELECT HOST_ID AS NAME
+		     , HOST_ID AS ID 
+		    FROM T_MDF_CO_DIA_PEER_TABLE 
+		   WHERE SYSTEM_ID = #{system_id}
+		     AND SERVICE_ID = #{service_id}
+             AND PROCESS_ID = #{process_id}      
+             
+    </select>
+ 
+</mapper>

@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ntels.avocado.dao.atom.fault.alarmhistory.AlarmHistoryMapper">
+
+    <select id="list" 
+		    databaseId="mysql"
+		    resultType="com.ntels.avocado.domain.atom.fault.alarmhistory.AlarmHistory">
+      <include refid="com.ntels.avocado.dao.common.CommonMapper.paging_header" />
+      SELECT *
+		FROM ( 	
+             <include refid="listClause"/>
+             ) ResulList
+    		 <include refid="listOrder"/>
+    <include refid="com.ntels.avocado.dao.common.CommonMapper.paging_footer" />
+    </select>
+    
+    <select id="count"   resultType="int">
+        SELECT 
+        	  count(0)
+		FROM  ( 	
+              <include refid="listClause"/>
+             ) ResulList
+    </select>      
+      
+    
+    <select id="listExcel"    resultType="java.util.LinkedHashMap">
+        SELECT 	 PRC_DATE         AS "Date"
+				,CLEARED_DATE     AS "Cleared Date"
+				,CODE             AS "Code"
+				,PROBABLE_CAUSE   AS "Probable Cause"
+				,PKG_NAME         AS "Package"
+				,NODE_NAME        AS "System"
+				,SEVERITY_NM      AS "Severity"
+				,LOCATION         AS "Location"
+				,DURATION         AS "Duration"
+				,IF(SNMP_SEND_YN = 'Y','YES','NO')
+				                  AS "SNMP Send"
+				,CLEAR_TYPE       AS "CLEAR_TYPE"
+				,ADDITIONAL_TEXT  AS "ADDITIONAL TEXT"
+				,TRACKING_ID      AS "TRACKING ID"
+		FROM  ( 	
+              <include refid="listClause"/>
+             ) ResulList
+			  <include refid="listOrder"/>
+    </select>
+    
+    
+    
+    <sql id="listClause">
+    	SELECT CONCAT( DATE_FORMAT(PRC_DATE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language})) ,' ',DATE_FORMAT(now(), '%H:%i:%s') ) AS PRC_DATE
+    	      ,CASE 
+	            WHEN CLEARED_YN = 'Y'
+	            THEN CONCAT( DATE_FORMAT(CLEARED_DATE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = 'en')) ,' ',DATE_FORMAT(now(), '%H:%i:%s') )
+	            ELSE '--'
+	            END AS CLEARED_DATE 
+    	      ,CODE
+    	      ,PROBABLE_CAUSE
+    	      ,PKG_NAME
+    	      ,NODE_NO
+    	      ,NODE_NAME
+    	      ,SEVERITY_CCD
+    	      ,SEVERITY_NM
+    	      ,LOCATION
+    	      ,DURATION
+    	      ,SNMP_SEND_YN
+    	      ,CLEARED_YN
+    	      ,CLEAR_TYPE
+    	      ,ADDITIONAL_TEXT
+    	      ,TRACKING_ID
+    	      ,ALM_GROUP
+    	FROM  (
+		    	SELECT  H.PRC_DATE      
+				      , H.CLEARED_DATE  
+				      , H.CODE           
+				      , H.PROBABLE_CAUSE 
+				      , H.PKG_NAME
+				      , H.NODE_NO AS NODE_NO
+				      , (SELECT NODE_NAME FROM TAT_NODE WHERE NODE_NO = H.NODE_NO)               AS NODE_NAME
+				      , H.SEVERITY_CCD                                                           AS SEVERITY_CCD
+				      , (SELECT CODE_NAME 
+				           FROM TAT_COMMON_CODE 
+				          WHERE 1=1 
+				           AND GROUP_CD  = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_ALARM_SEVERITY_CODE"/>
+				           AND DETAIL_CD = H.SEVERITY_CCD 
+				          )  AS SEVERITY_NM
+				      , LOCATION      
+				      , IFNULL(DATE_FORMAT(ELAPSED_TIME,'%H:%i:%s'),'--')  AS DURATION 
+				      , SNMP_SEND_YN
+		              , CLEARED_YN
+				      , CASE 
+			                  WHEN CLEARED_YN = 'Y' 
+		                       AND (SELECT MANUAL_YN FROM   TAT_ALM_HIST AH WHERE  AH.MSG_ID = H.CLEARED_MSG_ID) = 'Y'  
+		                      THEN 'Manual'
+		                      WHEN CLEARED_YN = 'Y' 
+		                       AND (SELECT MANUAL_YN FROM   TAT_ALM_HIST AH WHERE  AH.MSG_ID = H.CLEARED_MSG_ID) = 'N' 
+		                      THEN 'Auto'
+			            ELSE '' END                AS CLEAR_TYPE
+			          , IFNULL(ADDITIONAL_TEXT,'') AS ADDITIONAL_TEXT
+			          , SNMP_SEQ_ID                AS TRACKING_ID
+			          , GROUP_CCD                  AS ALM_GROUP
+				FROM
+				TAT_ALM_HIST H 
+					<!-- LEFT OUTER JOIN 
+				TAT_ALM_CODE_DEF ACD 
+				 ON H.CODE = ACD.CODE 
+				AND H.PKG_NAME = ACD.PKG_NAME -->
+				) A
+        <include refid="whereClause"/>
+    
+    </sql>
+      
+      
+    <sql id="whereClause">
+		WHERE 1 = 1
+		AND   CONCAT(DATE_FORMAT(A.PRC_DATE,'%Y%m%d%H%i')) <![CDATA[>=]]> CONCAT(#{condition.startDate}, #{condition.startTime})
+		AND   CONCAT(DATE_FORMAT(A.PRC_DATE,'%Y%m%d%H%i')) <![CDATA[<]]>  CONCAT(#{condition.endDate}, #{condition.endTime})
+		<if test="condition.system_id != null and condition.system_id != '' ">
+		AND A.NODE_NO IN
+			<foreach   collection="condition.systemArray" item ="systemArray" index="index"   open="(" separator="," close=")" >
+			 #{systemArray, jdbcType=INTEGER}
+			</foreach>
+		</if>
+		<if test="condition.group_id != null and condition.group_id != '' ">
+		AND A.ALM_GROUP IN
+			<foreach   collection="condition.groupArray" item ="groupArray" index="index"   open="(" separator="," close=")" >
+			 #{groupArray, jdbcType=INTEGER}
+			</foreach>
+		</if>
+		<if test="condition.severity_id != null and condition.severity_id != '' ">
+		AND A.SEVERITY_CCD IN
+			<foreach   collection="condition.severityArray" item ="severityArray" index="index"   open="(" separator="," close=")" >
+			 #{severityArray, jdbcType=INTEGER}
+			</foreach>
+		</if>
+		<!-- CLEARED_YN -->
+		<if test="condition.cleared_flag != null and condition.cleared_flag != '' and  condition.cleared_flag != 'all' ">
+	          	AND A.CLEARED_YN  =   #{condition.cleared_flag , jdbcType=CHAR}
+		</if>
+		<if test="condition.code != null and condition.code != ''">
+	          	AND A.CODE           LIKE CONCAT('%', #{condition.code , jdbcType=CHAR}, '%')
+		</if>
+		<if test="condition.location != null and condition.location != ''">
+	          	AND A.LOCATION       LIKE CONCAT('%', #{condition.location , jdbcType=CHAR}, '%')
+		</if>
+		<if test="condition.probableCause != null and condition.probableCause != ''">
+	       	AND A.PROBABLE_CAUSE LIKE CONCAT('%',#{condition.probableCause , jdbcType=CHAR} , '%')
+	    </if>
+   </sql>
+   
+   
+   <sql id="listOrder">
+	    <if test="condition.orderBy != '' and condition.orderBy != null">
+		ORDER BY ${condition.orderBy}
+		</if>
+		<if test="condition.orderBy == '' or condition.orderBy == null">
+		ORDER BY  PRC_DATE ASC
+		         ,CLEARED_DATE ASC
+				 ,CODE ASC
+				 ,PROBABLE_CAUSE ASC
+				 ,PKG_NAME ASC
+				 ,NODE_NAME ASC
+				 ,SEVERITY_CCD ASC
+				 ,DURATION ASC
+		</if>
+   </sql>
+   
+
+</mapper>

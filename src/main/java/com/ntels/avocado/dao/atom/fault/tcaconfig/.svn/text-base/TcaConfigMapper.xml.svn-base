@@ -1,0 +1,386 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+ 
+ <mapper namespace="com.ntels.avocado.dao.atom.fault.tcaconfig.TcaConfigMapper">
+ <!-- * 리스트 조회 -->
+     <select id="list" databaseId="mysql"
+                      resultType="com.ntels.avocado.domain.atom.fault.tcaconfig.TcaConfig">
+        <include refid="com.ntels.avocado.dao.common.CommonMapper.paging_header" />
+		  	<include refid="listClause"/>
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_footer" />
+    
+    </select>
+ 
+ 
+ <select id="listExcel" resultType="java.util.LinkedHashMap">
+  SELECT PKG_NAME    AS "Package"
+        ,NODE_NAME   AS "Node"
+        ,TABLE_NAME  AS "Statistics Table"
+        ,COLUMN_NAME AS "Statistics Column"
+        ,ACT_YN      AS "Use"
+    FROM (<include refid="listClause"/>)EXCEL
+ </select>
+ 
+     <!-- * 리스트 Count -->
+    <select id="count" databaseId="mysql"  
+                       resultType="java.util.HashMap">
+        SELECT
+               COUNT(*) AS TOTAL_COUNT
+        FROM ( <include refid="listClause"/> ) Z
+    </select>
+ 
+    <select id="topSystemList" databaseId="mysql"
+                              resultType="java.util.LinkedHashMap">
+		SELECT NODE_NAME FROM TAT_NODE 
+		            WHERE 1=1
+					AND NODE_NO IN
+						<foreach   collection="condition.systemArray" item ="systemArray" index="index"   open="(" separator="," close=")" >
+						 #{systemArray, jdbcType=INTEGER}
+						</foreach>
+    </select>
+ 
+   <sql id="listClause">
+	SELECT  TCA.PKG_NAME
+   		   ,TCA.NODE_NO
+   		   ,(SELECT NODE_NAME FROM TAT_NODE WHERE NODE_NO = TCA.NODE_NO ) AS NODE_NAME
+   		   ,TCA.TABLE_NAME
+   		   ,TCA.COLUMN_NAME
+   		   ,(SELECT CODE_NAME 
+		          FROM TAT_COMMON_CODE
+		         WHERE 1=1
+		           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_GROUP_CODE_YN"/>
+		           AND DETAIL_CD = TCA.ACT_YN) AS ACT_YN
+	  FROM TAT_STS_TCA TCA
+	  WHERE 1=1
+	 <include refid="whereClause"/>
+ 	</sql>
+ 	
+ 	<sql id="whereClause">
+		<if test="condition.system_id != null and condition.system_id != ''">
+			AND TCA.NODE_NO = #{condition.system_id}
+		</if>
+    </sql>
+ 	
+    <!-- * table 콤보 조회 -->
+    <select id="StatisticsTable" databaseId="mysql"  
+                       resultType="java.util.HashMap">
+    	SELECT  TABLE_NAME AS ID 
+             ,TABLE_NAME AS NAME 
+        FROM TAT_STS_TABLE_INFO 
+       WHERE 1=1     
+         AND TYPE = 'STS'     
+         AND PKG_NAME = (SELECT PKG_NAME 
+    	  FROM TAT_NODE 
+    	 WHERE NODE_NO = #{node_no})
+    </select>
+    
+    <!-- * column 콤보 조회 -->
+    <select id="StatisticsColumn" databaseId="mysql"  
+                       resultType="java.util.HashMap">
+
+		SELECT  COLUMN_NAME AS ID
+		       ,COLUMN_NAME AS NAME
+		FROM TAT_STS_COLUMN_INFO
+		WHERE
+		1=1
+		AND PRI_KEY_YN = 'N'
+		AND TABLE_NAME = #{table_name}
+		AND COLUMN_NAME NOT IN ( SELECT COLUMN_NAME 
+		                          FROM TAT_STS_TCA 
+		                  			 WHERE 1=1 
+		                  			 AND NODE_NO = #{node_no}
+		                  			 AND TABLE_NAME = #{table_name}
+		                  			 )
+    </select>
+    
+    <insert id="insertTca" >
+    INSERT INTO TAT_STS_TCA
+        (  ACT_YN
+		  ,NODE_NO
+		  ,TABLE_NAME
+		  ,PKG_NAME
+		  ,COLUMN_NAME
+		  ,UNIT_VALUE
+		  ,MAX_VALUE
+		  ,MIN_VALUE
+		) VALUES (
+		   #{condition.actYn}  
+		  ,#{condition.node_no}
+		  ,#{condition.statisticsTable}  
+		  ,(SELECT PKG_NAME FROM TAT_NODE WHERE NODE_NO = #{condition.node_no})
+		  ,#{condition.statisticsColumn}  
+		  ,#{condition.unitValue}   
+		  ,#{condition.maxValue}   
+		  ,#{condition.minValue}  
+		)
+    </insert>
+    
+    <insert id="insertTcaRule">
+	INSERT INTO TAT_STS_TCA_RULE
+	(
+	   SEVERITY_CCD
+	  ,LEFT_SIGN
+	  ,LEFT_VAL
+	  ,RIGHT_SIGN
+	  ,RIGHT_VAL
+	  ,NODE_NO
+	  ,TABLE_NAME
+	  ,PKG_NAME
+	  ,COLUMN_NAME
+	) VALUES (
+	   #{condition.SEVERITY_CCD}
+ 	         
+		  	<if test="condition.SEVERITY_CCD == 'OVER CRITICAL'">
+		    	  ,<![CDATA['<=']]>                             
+				  ,#{condition.Critical_Over_left}  
+				  ,'!!'                             
+				  ,#{condition.Critical_Over_right} 
+		    </if>
+		    <if test="condition.SEVERITY_CCD == 'OVER MAJOR'">
+		    	  ,<![CDATA['<=']]>                             
+				  ,#{condition.Major_Over_left}  
+				  ,<![CDATA['<']]>                              
+				  ,#{condition.Major_Over_right} 
+		    </if>
+		    <if test="condition.SEVERITY_CCD == 'OVER MINOR'">
+		    	  ,<![CDATA['<=']]>                             
+				  ,#{condition.Minor_Over_left}  
+				  ,<![CDATA['<']]>                              
+				  ,#{condition.Minor_Over_right} 
+		    </if>
+		    <if test="condition.SEVERITY_CCD == 'CLEARED'">
+		    	  ,<![CDATA['<=']]>                             
+				  ,#{condition.Cleared_left}  
+				  ,<![CDATA['<']]>                              
+				  ,#{condition.Cleared_right} 
+		    </if>
+		    <if test="condition.SEVERITY_CCD == 'UNDER MINOR'">
+		    	  ,<![CDATA['<=']]>                             
+				  ,#{condition.Minor_Under_left}  
+				  ,<![CDATA['<']]>                              
+				  ,#{condition.Minor_Under_right} 
+		    </if>
+		    <if test="condition.SEVERITY_CCD == 'UNDER MAJOR'">
+		    	  ,<![CDATA['<=']]>                             
+				  ,#{condition.Major_Under_left}  
+				  ,<![CDATA['<']]>                              
+				  ,#{condition.Major_Under_right} 
+		    </if>
+		    <if test="condition.SEVERITY_CCD == 'UNDER CRITICAL'"> 
+		    	  ,'!!'                             
+				  ,#{condition.Critical_Under_left}  
+				  ,<![CDATA['<']]>                              
+				  ,#{condition.Critical_Under_right} 
+		    </if>
+
+	  ,#{condition.node_no}               
+	  ,#{condition.statisticsTable}        
+	  ,(SELECT PKG_NAME FROM TAT_NODE WHERE NODE_NO = #{condition.node_no}) 
+	  ,#{condition.statisticsColumn}       
+	)
+    </insert> 
+    
+    
+    <update id="updateTca" >
+	    UPDATE TAT_STS_TCA
+			SET
+			   ACT_YN     = #{condition.actYn}
+			  ,UNIT_VALUE = #{condition.unitValue} 
+			  ,MAX_VALUE  = #{condition.maxValue}
+			  ,MIN_VALUE  = #{condition.minValue}
+			WHERE 1=1 
+			  AND NODE_NO     = #{condition.node_no} 
+			  AND TABLE_NAME  = #{condition.table_name}
+			  AND PKG_NAME    = #{condition.pkg_name}
+			  AND COLUMN_NAME = #{condition.column_name}
+    </update>
+    
+    <update id="updateTcaRule">
+		UPDATE TAT_STS_TCA_RULE
+		   SET
+			  <if test="condition.SEVERITY_CCD == 'OVER CRITICAL'">
+			  	LEFT_VAL  = #{condition.Critical_Over_left}
+			   ,RIGHT_VAL = #{condition.Critical_Over_right}
+			  </if>
+			  <if test="condition.SEVERITY_CCD == 'OVER MAJOR'">
+			  	LEFT_VAL  = #{condition.Major_Over_left}
+			   ,RIGHT_VAL = #{condition.Major_Over_right}
+			  </if>
+			  <if test="condition.SEVERITY_CCD == 'OVER MINOR'">
+			  	LEFT_VAL  = #{condition.Minor_Over_left}
+			   ,RIGHT_VAL = #{condition.Minor_Over_right}
+			  </if>
+			  <if test="condition.SEVERITY_CCD == 'CLEARED'">
+			  	LEFT_VAL  = #{condition.Cleared_left}
+			   ,RIGHT_VAL = #{condition.Cleared_right}
+			  </if>
+			  <if test="condition.SEVERITY_CCD == 'UNDER MINOR'">
+			  	LEFT_VAL  = #{condition.Minor_Under_left}
+			   ,RIGHT_VAL = #{condition.Minor_Under_right}
+			  </if>
+			  <if test="condition.SEVERITY_CCD == 'UNDER MAJOR'">
+			  	LEFT_VAL  = #{condition.Major_Under_left}
+			   ,RIGHT_VAL = #{condition.Major_Under_right}
+			  </if>
+			  <if test="condition.SEVERITY_CCD == 'UNDER CRITICAL'">
+			  	LEFT_VAL  = #{condition.Critical_Under_left}
+			   ,RIGHT_VAL = #{condition.Critical_Under_right}
+			  </if>
+			WHERE 1=1 
+			  AND SEVERITY_CCD = #{condition.SEVERITY_CCD}
+			  AND NODE_NO      = #{condition.node_no} 
+			  AND TABLE_NAME   = #{condition.table_name}
+			  AND PKG_NAME     = #{condition.pkg_name}
+			  AND COLUMN_NAME  = #{condition.column_name}
+    </update>
+    
+    
+    <delete id="deleteTca" >
+	    DELETE FROM TAT_STS_TCA
+		 WHERE 1=1 
+		  AND NODE_NO     = #{condition.node_no} 
+		  AND TABLE_NAME  = #{condition.table_name}
+		  AND PKG_NAME    = #{condition.pkg_name}
+		  AND COLUMN_NAME = #{condition.column_name}
+    </delete>
+
+    <delete id="deleteTcaRule">
+		DELETE FROM TAT_STS_TCA_RULE
+			WHERE 1=1 
+			  AND NODE_NO      = #{condition.node_no} 
+			  AND TABLE_NAME   = #{condition.table_name}
+			  AND PKG_NAME     = #{condition.pkg_name}
+			  AND COLUMN_NAME  = #{condition.column_name}
+    </delete>    
+    
+    
+    <!-- * Tca 상세 조회 -->
+    <select id="getTcaInfo" databaseId="mysql"
+                            resultType="com.ntels.avocado.domain.atom.fault.tcaconfig.TcaConfig"   > 
+	SELECT
+	       NODE_NO
+	      ,(SELECT NODE_NAME 
+	    	  FROM TAT_NODE 
+	    	 WHERE NODE_NO = TCA.NODE_NO ) AS NODE_NAME
+	      ,TABLE_NAME
+	      ,PKG_NAME
+	      ,COLUMN_NAME
+	      ,(SELECT CODE_NAME 
+		          FROM TAT_COMMON_CODE
+		         WHERE 1=1
+		           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_GROUP_CODE_YN"/>
+		           AND DETAIL_CD = ACT_YN) AS ACT_YN_DC
+	      ,ACT_YN
+	      ,UNIT_VALUE
+	      ,MAX_VALUE
+	      ,MIN_VALUE
+	      ,ROUND(MAX_VALUE-((MAX_VALUE-MIN_VALUE )/2)) AS MIDDLE_VALUE
+	      ,(SELECT RIGHT_VAL 
+	          FROM TAT_STS_TCA_RULE 
+	          WHERE 1=1 
+	          AND NODE_NO     = TCA.NODE_NO
+	          AND PKG_NAME    =  TCA.PKG_NAME
+	          AND TABLE_NAME  = TCA.TABLE_NAME
+	          AND COLUMN_NAME = TCA.COLUMN_NAME
+	          AND SEVERITY_CCD = 'UNDER CRITICAL' ) AS critical_under_right
+	      ,(SELECT LEFT_VAL 
+	          FROM TAT_STS_TCA_RULE 
+	          WHERE 1=1 
+	          AND NODE_NO     = TCA.NODE_NO
+	          AND PKG_NAME    =  TCA.PKG_NAME
+	          AND TABLE_NAME  = TCA.TABLE_NAME
+	          AND COLUMN_NAME = TCA.COLUMN_NAME
+	          AND SEVERITY_CCD = 'UNDER MAJOR' ) AS major_under_left
+	      ,(SELECT RIGHT_VAL 
+	          FROM TAT_STS_TCA_RULE 
+	          WHERE 1=1 
+	          AND NODE_NO     = TCA.NODE_NO
+	          AND PKG_NAME    =  TCA.PKG_NAME
+	          AND TABLE_NAME  = TCA.TABLE_NAME
+	          AND COLUMN_NAME = TCA.COLUMN_NAME
+	          AND SEVERITY_CCD = 'UNDER MAJOR' ) AS major_under_right
+	      ,(SELECT LEFT_VAL 
+	          FROM TAT_STS_TCA_RULE 
+	          WHERE 1=1 
+	          AND NODE_NO     = TCA.NODE_NO
+	          AND PKG_NAME    =  TCA.PKG_NAME
+	          AND TABLE_NAME  = TCA.TABLE_NAME
+	          AND COLUMN_NAME = TCA.COLUMN_NAME
+	          AND SEVERITY_CCD = 'UNDER MINOR' ) AS minor_under_left
+	      ,(SELECT RIGHT_VAL 
+	          FROM TAT_STS_TCA_RULE 
+	          WHERE 1=1 
+	          AND NODE_NO     = TCA.NODE_NO
+	          AND PKG_NAME    =  TCA.PKG_NAME
+	          AND TABLE_NAME  = TCA.TABLE_NAME
+	          AND COLUMN_NAME = TCA.COLUMN_NAME
+	          AND SEVERITY_CCD = 'UNDER MINOR' ) AS minor_under_right
+	      ,(SELECT LEFT_VAL 
+	          FROM TAT_STS_TCA_RULE 
+	          WHERE 1=1 
+	          AND NODE_NO     = TCA.NODE_NO
+	          AND PKG_NAME    =  TCA.PKG_NAME
+	          AND TABLE_NAME  = TCA.TABLE_NAME
+	          AND COLUMN_NAME = TCA.COLUMN_NAME
+	          AND SEVERITY_CCD = 'CLEARED' ) AS cleared_left
+	      ,(SELECT RIGHT_VAL 
+	          FROM TAT_STS_TCA_RULE 
+	          WHERE 1=1 
+	          AND NODE_NO     = TCA.NODE_NO
+	          AND PKG_NAME    =  TCA.PKG_NAME
+	          AND TABLE_NAME  = TCA.TABLE_NAME
+	          AND COLUMN_NAME = TCA.COLUMN_NAME
+	          AND SEVERITY_CCD = 'CLEARED' ) AS cleared_right
+	      ,(SELECT LEFT_VAL 
+	          FROM TAT_STS_TCA_RULE 
+	          WHERE 1=1 
+	          AND NODE_NO     = TCA.NODE_NO
+	          AND PKG_NAME    =  TCA.PKG_NAME
+	          AND TABLE_NAME  = TCA.TABLE_NAME
+	          AND COLUMN_NAME = TCA.COLUMN_NAME
+	          AND SEVERITY_CCD = 'OVER MINOR' ) AS minor_over_left
+	      ,(SELECT RIGHT_VAL 
+	          FROM TAT_STS_TCA_RULE 
+	          WHERE 1=1 
+	          AND NODE_NO     = TCA.NODE_NO
+	          AND PKG_NAME    =  TCA.PKG_NAME
+	          AND TABLE_NAME  = TCA.TABLE_NAME
+	          AND COLUMN_NAME = TCA.COLUMN_NAME
+	          AND SEVERITY_CCD = 'OVER MINOR' ) AS minor_over_right  
+	      ,(SELECT LEFT_VAL 
+	          FROM TAT_STS_TCA_RULE 
+	          WHERE 1=1 
+	          AND NODE_NO     = TCA.NODE_NO
+	          AND PKG_NAME    =  TCA.PKG_NAME
+	          AND TABLE_NAME  = TCA.TABLE_NAME
+	          AND COLUMN_NAME = TCA.COLUMN_NAME
+	          AND SEVERITY_CCD = 'OVER MAJOR' ) AS major_over_left
+	      ,(SELECT RIGHT_VAL 
+	          FROM TAT_STS_TCA_RULE 
+	          WHERE 1=1 
+	          AND NODE_NO     = TCA.NODE_NO
+	          AND PKG_NAME    =  TCA.PKG_NAME
+	          AND TABLE_NAME  = TCA.TABLE_NAME
+	          AND COLUMN_NAME = TCA.COLUMN_NAME
+	          AND SEVERITY_CCD = 'OVER MAJOR' ) AS major_over_right        
+	      ,(SELECT LEFT_VAL 
+	          FROM TAT_STS_TCA_RULE 
+	          WHERE 1=1 
+	          AND NODE_NO     = TCA.NODE_NO
+	          AND PKG_NAME    =  TCA.PKG_NAME
+	          AND TABLE_NAME  = TCA.TABLE_NAME
+	          AND COLUMN_NAME = TCA.COLUMN_NAME
+	          AND SEVERITY_CCD = 'OVER CRITICAL' ) AS critical_over_left    
+	FROM TAT_STS_TCA TCA
+	WHERE 1=1 
+	  AND TCA.NODE_NO =  #{condition.node_no}
+	  AND TCA.PKG_NAME = #{condition.pkg_name}
+	  AND TCA.TABLE_NAME= #{condition.table_name}
+	  AND TCA.COLUMN_NAME = #{condition.column_name}
+    
+    
+    </select>
+ 
+ </mapper>

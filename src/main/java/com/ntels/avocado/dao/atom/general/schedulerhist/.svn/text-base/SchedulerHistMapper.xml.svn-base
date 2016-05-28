@@ -1,0 +1,368 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ntels.avocado.dao.atom.general.schedulerhist.SchedulerHistMapper">
+
+	<select id="list" 
+	        parameterType="com.ntels.avocado.domain.atom.general.schedulerhist.Condition" 
+	        resultType="com.ntels.avocado.domain.atom.general.schedulerhist.SchedulerHistDomain">
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_header"/>
+		SELECT /* SchedulerHistMapper.xml list */
+		       H.PKG_NAME
+			 , H.GROUP_NAME
+		     , H.JOB_NAME
+		     , DATE_FORMAT(H.PRC_DATE, (SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language}))
+		     							PRC_DATE
+		     , DATE_FORMAT(H.END_DATE, (SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language}))
+		     							END_DATE
+		     , H.PROC_NAME
+		     , H.NODE_NAME
+		     , H.EXIT_CD
+		     , H.SUCCESS_YN
+		  FROM TAT_BATCH_HIST			H
+		 WHERE 1=1
+		   <if test="condition.system_id != null and condition.system_id != '' ">
+			AND H.NODE_NAME IN
+				<foreach   collection="condition.systemArray" item ="systemArray" index="index"   open="(" separator="," close=")" >
+				 #{systemArray, jdbcType=INTEGER}
+				</foreach>
+		   </if>
+		   <if test='condition.pkg_name != null and condition.pkg_name != "" '>
+		   AND H.PKG_NAME				= #{condition.pkg_name}
+		   </if>
+		   <if test='condition.group_name != null and condition.group_name != "" '>
+		   AND H.GROUP_NAME				= #{condition.group_name}
+		   </if>
+		   <if test='condition.job_name != null and condition.job_name != "" '>
+		   AND H.JOB_NAME				= #{condition.job_name}
+		   </if>
+		   <if test='condition.gubun != null and condition.gubun != "" and condition.gubun == "start" '>
+		   AND H.PRC_DATE				BETWEEN STR_TO_DATE(#{condition.startDate},(SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language}) )
+	   									AND STR_TO_DATE(#{condition.endDate},(SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language}) )
+		   </if>
+		   <if test='condition.gubun != null and condition.gubun != "" and condition.gubun == "end" '>
+		   AND H.END_DATE				BETWEEN STR_TO_DATE(#{condition.startDate},(SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language}) )
+	   									AND STR_TO_DATE(#{condition.endDate},(SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language}) )
+		   </if>
+		 ORDER BY
+		       H.PRC_DATE DESC
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_footer"/>
+	</select>
+ 	
+ 	<select id="count" 
+	        parameterType="com.ntels.avocado.domain.atom.general.schedulerhist.Condition" 
+	        resultType="int">
+		SELECT /* SchedulerHistMapper.xml count */
+		       COUNT(0)
+		  FROM TAT_BATCH_HIST		H
+		 WHERE 1=1
+		   <if test="condition.system_id != null and condition.system_id != '' ">
+		   AND H.NODE_NAME IN
+				<foreach   collection="condition.systemArray" item ="systemArray" index="index"   open="(" separator="," close=")" >
+				 #{systemArray, jdbcType=INTEGER}
+				</foreach>
+		   </if>
+		   <if test='condition.pkg_name != null and condition.pkg_name != "" '>
+		   AND H.PKG_NAME				= #{condition.pkg_name}
+		   </if>
+		   <if test='condition.group_name != null and condition.group_name != "" '>
+		   AND H.GROUP_NAME				= #{condition.group_name}
+		   </if>
+		   <if test='condition.job_name != null and condition.job_name != "" '>
+		   AND H.JOB_NAME				= #{condition.job_name}
+		   </if>
+		   <if test='condition.gubun != null and condition.gubun != "" and condition.gubun == "start" '>
+		   AND H.PRC_DATE				BETWEEN STR_TO_DATE(#{condition.startDate},(SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language}) )
+	   									AND STR_TO_DATE(#{condition.endDate},(SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language}) )
+		   </if>
+		   <if test='condition.gubun != null and condition.gubun != "" and condition.gubun == "end" '>
+		   AND H.END_DATE				BETWEEN STR_TO_DATE(#{condition.startDate},(SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language}) )
+	   									AND STR_TO_DATE(#{condition.endDate},(SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language}) )
+		   </if>
+		 ORDER BY
+		       H.PRC_DATE DESC
+ 	</select>
+    
+    <select id="listExcel" 
+	          parameterType="com.ntels.avocado.domain.atom.general.schedulerhist.Condition" 
+	          resultType="java.util.LinkedHashMap">
+		SELECT /* SchedulerHistMapper.xml listExcel */
+		       H.PKG_NAME				AS "Package"
+			 , H.GROUP_NAME				AS "Batch Group"
+		     , H.JOB_NAME				AS "Batch Job"
+		     , H.NODE_NAME				AS "Node Name"
+		     , DATE_FORMAT(H.PRC_DATE, (SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language}))
+		     							AS "Start Date"
+		     , IFNULL(DATE_FORMAT(H.END_DATE, (SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language})),"")
+		     							AS "End Date"
+		     , H.EXIT_CD				AS "Exit Code"
+		     , IFNULL(H.SUCCESS_YN,"")	AS "Success"
+		  FROM TAT_BATCH_HIST		H
+		 WHERE 1=1
+		   <if test="condition.system_id != null and condition.system_id != '' ">
+		   AND H.NODE_NAME IN
+				<foreach   collection="condition.systemArray" item ="systemArray" index="index"   open="(" separator="," close=")" >
+				 #{systemArray, jdbcType=INTEGER}
+				</foreach>
+		   </if>
+		   <if test='condition.pkg_name != null and condition.pkg_name != "" '>
+		   AND H.PKG_NAME				= #{condition.pkg_name}
+		   </if>
+		   <if test='condition.group_name != null and condition.group_name != "" '>
+		   AND H.GROUP_NAME				= #{condition.group_name}
+		   </if>
+		   <if test='condition.job_name != null and condition.job_name != "" '>
+		   AND H.JOB_NAME				= #{condition.job_name}
+		   </if>
+		   <if test='condition.gubun != null and condition.gubun != "" and condition.gubun == "start" '>
+		   AND H.PRC_DATE				BETWEEN STR_TO_DATE(#{condition.startDate},(SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language}) )
+	   									AND STR_TO_DATE(#{condition.endDate},(SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language}) )
+		   </if>
+		   <if test='condition.gubun != null and condition.gubun != "" and condition.gubun == "end" '>
+		   AND H.END_DATE				BETWEEN STR_TO_DATE(#{condition.startDate},(SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language}) )
+	   									AND STR_TO_DATE(#{condition.endDate},(SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language}) )
+		   </if>
+		 ORDER BY
+		       H.PRC_DATE DESC
+      </select>
+      
+    <select id="listPackageName" 
+	        parameterType="com.ntels.avocado.domain.atom.general.schedulerhist.Condition" 
+	        resultType="com.ntels.avocado.domain.atom.general.schedulerhist.SchedulerHistDomain">
+		SELECT /* SchedulerHistMapper.xml listPackageName */
+		       DISTINCT PKG_NAME
+		  FROM TAT_BATCH_HIST			H
+		 WHERE 1=1
+		 ORDER BY 
+		       H.PKG_NAME
+	</select>
+      
+    <select id="listGroupName" 
+	        parameterType="com.ntels.avocado.domain.atom.general.schedulerhist.Condition" 
+	        resultType="com.ntels.avocado.domain.atom.general.schedulerhist.SchedulerHistDomain">
+		SELECT /* SchedulerHistMapper.xml listGroupName */
+		       DISTINCT GROUP_NAME
+		  FROM TAT_BATCH_HIST			H
+		 WHERE 1=1
+		   <if test="condition.system_id != null and condition.system_id != '' ">
+		   AND H.NODE_NAME IN
+				<foreach   collection="condition.systemArray" item ="systemArray" index="index"   open="(" separator="," close=")" >
+				 #{systemArray, jdbcType=INTEGER}
+				</foreach>
+		   </if>
+		 ORDER BY 
+		       H.GROUP_NAME
+	</select>
+      
+    <select id="listJobName" 
+	        parameterType="com.ntels.avocado.domain.atom.general.schedulerhist.Condition" 
+	        resultType="com.ntels.avocado.domain.atom.general.schedulerhist.SchedulerHistDomain">
+		SELECT /* SchedulerHistMapper.xml listJobName */
+		       DISTINCT JOB_NAME
+		  FROM TAT_BATCH_HIST			H
+		 WHERE 1=1
+		   <if test="condition.system_id != null and condition.system_id != '' ">
+		   AND H.NODE_NAME IN
+				<foreach   collection="condition.systemArray" item ="systemArray" index="index"   open="(" separator="," close=")" >
+				 #{systemArray, jdbcType=INTEGER}
+				</foreach>
+		   </if>
+		   AND H.GROUP_NAME				= #{condition.group_name}
+		 ORDER BY 
+		       H.JOB_NAME
+	</select>
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+	
+	
+	<select id="list_dist" 
+	        parameterType="com.ntels.avocado.domain.atom.general.schedulerhist.Condition" 
+	        resultType="com.ntels.avocado.domain.atom.general.schedulerhist.SchedulerHistDomain">
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_header"/>
+		SELECT  b.package_name,
+			b.batch_group_name,
+			c.batch_job_name, 
+			a.log_event_date, 
+			a.log_event_time,
+			a.seq, 
+			a.log_code, 
+			a.log_message
+		FROM
+			(
+				SELECT
+					*  
+				FROM
+					T_NFW_BATCH_LOG_HIST
+			) a
+			LEFT OUTER JOIN
+			(
+				SELECT 
+			  		<!-- a.system_id, a.system_name, --> b.package_id, b.package_name, c.batch_group_id, c.batch_group_name 
+				FROM 
+					<!-- T_NFW_SYSTEM a, --> T_NFW_PACKAGE b, T_NFW_BATCH_GROUP c
+			   	WHERE
+			   			<!-- a.system_id = b.system_id
+			   		AND a.system_id = c.system_id
+			   		AND --> b.package_id = c.package_id
+			) b
+				ON	a.batch_group_id = b.batch_group_id AND a.package_id = b.package_id
+			LEFT OUTER JOIN
+			(
+				SELECT 
+					package_id, batch_group_id, batch_job_id, batch_job_name
+				FROM 
+					T_NFW_BATCH_JOB 
+			) c
+				ON a.batch_job_id = c.batch_job_id and a.package_id = c.package_id and a.batch_group_id = c.batch_group_id
+		WHERE	1=1
+			<!-- <if test="condition.system_id != null and condition.system_id != 'all'">
+			AND a.system_id = #{condition.system_id, jdbcType=VARCHAR}
+			</if> -->
+			<if test="condition.package_id != null and condition.package_id != 'all'">
+			AND a.package_id = #{condition.package_id, jdbcType=VARCHAR}
+			</if>
+			<if test="condition.batch_group_id != null and condition.batch_group_id != 'all'">
+			AND a.batch_group_id = #{condition.batch_group_id, jdbcType=VARCHAR}
+			</if>
+			<if test="condition.process_id != null and condition.process_id != 'all'">
+			AND a.batch_job_id = #{condition.process_id, jdbcType=VARCHAR}
+			</if>
+			AND	CONCAT(a.log_event_date, a.log_event_time)
+				BETWEEN CONCAT(DATE_FORMAT(STR_TO_DATE(#{condition.startDate, jdbcType=VARCHAR},'%Y-%m-%d'),'%Y%m%d'), #{condition.startTime, jdbcType=VARCHAR}) 
+				AND CONCAT(DATE_FORMAT(STR_TO_DATE(#{condition.endDate, jdbcType=VARCHAR},'%Y-%m-%d'),'%Y%m%d'), #{condition.endTime, jdbcType=VARCHAR})
+		ORDER BY a.log_event_date DESC, a.log_event_time DESC
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_footer"/>
+	</select>
+ 	
+ 	<select id="count_dist" 
+	        parameterType="com.ntels.avocado.domain.atom.general.schedulerhist.Condition" 
+	        resultType="int">
+		SELECT
+			COUNT(0)
+		FROM
+			(
+				SELECT
+					*  
+				FROM
+					T_NFW_BATCH_LOG_HIST
+			) a
+			LEFT OUTER JOIN
+			(
+				SELECT 
+			  		<!-- a.system_id, a.system_name, --> b.package_id, b.package_name, c.batch_group_id, c.batch_group_name 
+				FROM 
+					<!-- T_NFW_SYSTEM a, --> T_NFW_PACKAGE b, T_NFW_BATCH_GROUP c
+			   	WHERE
+			   			<!-- a.system_id = b.system_id
+			   		AND a.system_id = c.system_id
+			   		AND --> b.package_id = c.package_id
+			) b
+				ON	a.batch_group_id = b.batch_group_id AND a.package_id = b.package_id
+			LEFT OUTER JOIN
+			(
+				SELECT 
+					package_id, batch_group_id, batch_job_id, batch_job_name
+				FROM 
+					T_NFW_BATCH_JOB 
+			) c
+				ON a.batch_job_id = c.batch_job_id and a.package_id = c.package_id and a.batch_group_id = c.batch_group_id
+		WHERE	1=1
+			<!-- <if test="condition.system_id != null and condition.system_id != 'all'">
+			AND a.system_id = #{condition.system_id, jdbcType=VARCHAR}
+			</if> -->
+			<if test="condition.package_id != null and condition.package_id != 'all'">
+			AND a.package_id = #{condition.package_id, jdbcType=VARCHAR}
+			</if>
+			<if test="condition.batch_group_id != null and condition.batch_group_id != 'all'">
+			AND a.batch_group_id = #{condition.batch_group_id, jdbcType=VARCHAR}
+			</if>
+			<if test="condition.process_id != null and condition.process_id != 'all'">
+			AND a.batch_job_id = #{condition.process_id, jdbcType=VARCHAR}
+			</if>
+			AND	CONCAT(a.log_event_date, a.log_event_time)
+				BETWEEN CONCAT(DATE_FORMAT(STR_TO_DATE(#{condition.startDate, jdbcType=VARCHAR},'%Y-%m-%d'),'%Y%m%d'), #{condition.startTime, jdbcType=VARCHAR}) 
+				AND CONCAT(DATE_FORMAT(STR_TO_DATE(#{condition.endDate, jdbcType=VARCHAR},'%Y-%m-%d'),'%Y%m%d'), #{condition.endTime, jdbcType=VARCHAR})
+ 	</select>
+      
+      <select id="listExcel_dist" 
+	          parameterType="com.ntels.avocado.domain.atom.general.schedulerhist.Condition" 
+	          resultType="org.apache.commons.collections.map.CaseInsensitiveMap">
+		SELECT  /*+ full() parallel(2) use_hash() */
+			<!-- b.system_name, -->
+<!-- 			
+			b.package_name as "패키지",
+			b.batch_group_name as "배치그룹",
+			c.batch_job_name as "배치", 
+			a.log_event_date as "로그 일자", 
+			a.log_event_time as "로그 시간",
+			a.seq as "Seq", 
+			a.log_code as "로그코드", 
+			a.log_message as "메시지" -->
+			b.package_name as "Package",
+			b.batch_group_name as "Batch Group",
+			c.batch_job_name as "Batch Job", 
+			a.log_event_date as "Log Date", 
+			a.log_event_time as "Log Time",
+			a.seq as "Seq", 
+			a.log_code as "Log Code", 
+			a.log_message as "Message"		
+		FROM
+			(
+				SELECT
+					*  
+				FROM
+					T_NFW_BATCH_LOG_HIST
+			) a
+			LEFT OUTER JOIN
+			(
+				SELECT 
+			  		<!-- a.system_id, a.system_name, --> b.package_id, b.package_name, c.batch_group_id, c.batch_group_name 
+				FROM 
+					<!-- T_NFW_SYSTEM a, --> T_NFW_PACKAGE b, T_NFW_BATCH_GROUP c
+			   	WHERE
+			   			<!-- a.system_id = b.system_id
+			   		AND a.system_id = c.system_id
+			   		AND --> b.package_id = c.package_id
+			) b
+				ON	a.batch_group_id = b.batch_group_id AND a.package_id = b.package_id
+			LEFT OUTER JOIN
+			(
+				SELECT 
+					package_id, batch_group_id, batch_job_id, batch_job_name
+				FROM 
+					T_NFW_BATCH_JOB 
+			) c
+				ON a.batch_job_id = c.batch_job_id and a.package_id = c.package_id and a.batch_group_id = c.batch_group_id
+		WHERE	1=1
+			<!-- <if test="condition.system_id != null and condition.system_id != 'all'">
+			AND a.system_id = #{condition.system_id, jdbcType=VARCHAR}
+			</if> -->
+			<if test="condition.package_id != null and condition.package_id != 'all'">
+			AND a.package_id = #{condition.package_id, jdbcType=VARCHAR}
+			</if>
+			<if test="condition.batch_group_id != null and condition.batch_group_id != 'all'">
+			AND a.batch_group_id = #{condition.batch_group_id, jdbcType=VARCHAR}
+			</if>
+			<if test="condition.process_id != null and condition.process_id != 'all'">
+			AND a.batch_job_id = #{condition.process_id, jdbcType=VARCHAR}
+			</if>
+			AND	CONCAT(a.log_event_date, a.log_event_time)
+				BETWEEN CONCAT(DATE_FORMAT(STR_TO_DATE(#{condition.startDate, jdbcType=VARCHAR},'%Y-%m-%d'),'%Y%m%d'), #{condition.startTime, jdbcType=VARCHAR}) 
+				AND CONCAT(DATE_FORMAT(STR_TO_DATE(#{condition.endDate, jdbcType=VARCHAR},'%Y-%m-%d'),'%Y%m%d'), #{condition.endTime, jdbcType=VARCHAR})
+		ORDER BY a.log_event_date DESC, a.log_event_time DESC
+      </select>
+
+</mapper>

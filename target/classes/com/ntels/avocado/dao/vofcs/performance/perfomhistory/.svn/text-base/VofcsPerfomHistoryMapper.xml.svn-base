@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+ 
+ <mapper namespace="com.ntels.avocado.dao.vofcs.performance.perfomhistory.VofcsPerfomHistoryMapper">
+   <!-- * 리스트 조회 -->
+     <select id="list" databaseId="mysql"
+                      resultType="java.util.LinkedHashMap">
+			    SELECT  SEQUENCE 
+                       ,CONCAT( DATE_FORMAT(PRC_DATE, #{condition.locale} ) ,' ',DATE_FORMAT(now(), '%H:%i:%s') ) AS PRC_DATE
+			           ,NODE_NAME AS SYSTEM
+			         <foreach   collection="condition.viewColumns" item ="viewColumn" index="index"   open="" separator="" close="" >
+						<if test="viewColumn != '' and viewColumn != null">
+						, ${viewColumn}
+			  		    </if>
+			  		 </foreach>
+			         <foreach   collection="condition.sumColumns" item ="sumColumn" index="index"   open="" separator="" close="" >
+			         	<if test="sumColumn != '' and sumColumn != null">
+				 		, ${sumColumn}
+				 		</if>
+			  		 </foreach>
+			    FROM (       
+					    <include refid="com.ntels.avocado.dao.common.CommonMapper.paging_header" />
+					    <include refid="listClause"/>                                    
+						<if test="condition.orderBy != '' and condition.orderBy != null">
+						ORDER BY ${condition.orderBy}
+						</if>
+						<if test="condition.orderBy == '' or condition.orderBy == null">
+						ORDER BY PRC_DATE , NODE_NAME ASC
+						</if>
+					    <include refid="com.ntels.avocado.dao.common.CommonMapper.paging_footer" />
+			         )RerFormList
+     </select>
+ 
+     <!-- * 리스트 Count -->
+    <select id="count" databaseId="mysql"  
+                       resultType="java.util.HashMap">
+        SELECT
+               COUNT(*) AS TOTAL_COUNT 
+        FROM 
+        (
+			<include refid="listClause"/>
+        ) Z
+    </select>
+
+ 	<!-- * 엑셀 조회 -->
+    <select id="listExcel"    resultType="java.util.LinkedHashMap">
+			    SELECT  SEQUENCE 
+					   ,CONCAT( DATE_FORMAT(PRC_DATE, #{condition.locale} ) ,' ',DATE_FORMAT(now(), '%H:%i:%s') ) AS PRC_DATE
+			           ,NODE_NAME AS SYSTEM
+			         <foreach   collection="condition.viewColumns" item ="viewColumn" index="index"   open="" separator="" close="" >
+						<if test="viewColumn != '' and viewColumn != null">
+						, ${viewColumn}
+			  		    </if>
+			  		 </foreach>
+			         <foreach   collection="condition.sumColumns" item ="sumColumn" index="index"   open="" separator="" close="" >
+			         	<if test="sumColumn != '' and sumColumn != null">
+				 		, ${sumColumn}
+				 		</if>
+			  		 </foreach>
+			    FROM ( 
+		  	            <include refid="listClause"/>                                    
+						<if test="condition.orderBy != '' and condition.orderBy != null">
+						ORDER BY ${condition.orderBy}
+						</if>
+						<if test="condition.orderBy == '' or condition.orderBy == null">
+						ORDER BY PRC_DATE , NODE_NAME ASC
+						</if>
+			         )RerFormList
+    </select>
+
+     <sql id="listClause">
+	     SELECT  SEQUENCE
+		       , PRC_DATE
+    	       , NODE_NAME
+			  <foreach   collection="condition.viewColumns" item ="viewColumn" index="index"   open="" separator="" close="" >
+				<if test="viewColumn != '' and viewColumn != null">
+				, ${viewColumn}
+	  		    </if>
+		  	  </foreach>
+	          <foreach   collection="condition.sumColumns" item ="sumColumn" index="index"   open="" separator="" close="" >
+	         	 <if test="sumColumn != '' and sumColumn != null">
+		 		 ,${sumColumn}
+		 		 </if>
+	  		  </foreach>
+		FROM  ${condition.tableName} 
+		      WHERE 1=1
+	 	        AND NODE_NAME IN
+						<foreach   collection="condition.systemArray" item ="systemArray" index="index"   open="(" separator="," close=")" >
+							 #{systemArray}
+						</foreach>
+		      <include refid="whereTimeClause"/>
+		      <if test="condition.whereClause != '' and  condition.whereClause != null">
+		          		${condition.whereClause}
+		      </if>
+    </sql>
+  
+    <sql id="whereTimeClause">
+			AND DATE_FORMAT(PRC_DATE,'%Y%m%d%H%i') <![CDATA[>=]]> CONCAT(#{condition.startDate}, #{condition.startTime})
+	        AND DATE_FORMAT(PRC_DATE,'%Y%m%d%H%i') <![CDATA[<]]> CONCAT(#{condition.endDate}, #{condition.endTime})
+    </sql>
+    
+ </mapper>

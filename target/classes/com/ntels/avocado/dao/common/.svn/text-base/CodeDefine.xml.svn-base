@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ntels.avocado.dao.common.CodeDefine">
+
+    <sql id="COMMON_YN_FLAG">'800001'</sql>
+	<sql id="COMMON_SERVICE_CODE">'000000'</sql>
+	<sql id="RULE_VARIABLE_TYPE">'100050'</sql>
+    
+    <sql id="DEFAULT_SYSTEM_ID_COMMON">'00'</sql>			<!-- Common System ID (For all other system) -->
+	<sql id="PACKAGE_ID_COMMON">'00'</sql>					<!-- Common Package ID (For all other package) -->
+	<sql id="PACKAGE_ID_RATING">'99'</sql>
+    
+    <sql id="COMMON_ALARM_GROUP_CODE">'030100'</sql>
+    <sql id="COMMON_ALARM_SEVERITY_CODE">'030101'</sql>
+    <sql id="COMMON_ALARM_TYPE_CODE">'030102'</sql>
+    
+    <sql id="COMMON_OPER_MESSAGE">200003</sql>
+    <sql id="COMMON_GROUP_CODE_YN">200005</sql>
+    <sql id="USER_MANAGER_COMMON_GROUP_CODE_STATUS">200006</sql>
+    <sql id="COMMON_GROUP_CODE_ALLOWYN">200007</sql>
+    <sql id="COMMON_GROUP_CODE_LOCK_TYPE">200008</sql>
+     <sql id="COMMON_GROUP_CODE_STAT_PERIOD">200009</sql>
+    
+    <!-- Alarm statistics  -->
+    <!-- <sql id="ALARM_STATISTICS_COMMON_GROUP_CODE_AUDIBLE_ALARM_SEVERITY">'800005'</sql> -->
+    <sql id="ALARM_STATISTICS_COMMON_GROUP_CODE_CLEARED_FLAG">'200004'</sql>
+    <sql id="ALARM_STATISTICS_COMMON_GROUP_CODE_CLEARED_FLAG_NULL">'NO'</sql>
+    <sql id="ALARM_STATISTICS_COMMON_GROUP_CODE_CLEARED_FLAG_NOT_NULL">'YES'</sql>
+    <sql id="ALARM_STATISTICS_COMMON_GROUP_CODE_SEARCH_TYPE">'200001'</sql>
+
+	<!-- /pfnm/history/login/ -->
+    <sql id="PFNM_HISTORY_LOGIN_CONSTANTS_LOGIN_STATUS">'700001'</sql>
+    <sql id="PFNM_HISTORY_LOGIN_CONSTANTS_LOGOUT_STATUS">'700002'</sql>
+    <sql id="PFNM_HISTORY_LOGIN_CONSTANTS_CLIENT_TYPE">'700003'</sql>
+    
+    <sql id="OFCS_COMMON_CONSTANTS_SYSTEM_ID_FOR_PACKGE">'0001'</sql> 
+    <sql id="OFCS_COMMON_CONSTANTS_SYSTEM_ID_FOR_PROCESS">'000001'</sql> 
+    <sql id="OFCS_COMMON_CONSTANTS_PACKAGE_ID_FOR_SERVICE">'01'</sql> 
+    <sql id="OFCS_COMMON_CONSTANTS_PACKAGE_ID_FOR_PROCESS">'01'</sql> 
+    
+    <!-- /ofcs/management/tca/ -->
+    <!-- <sql id="OFCS_MANAGEMENT_TCA_CONSTANTS_OVER_STATUS">'902000'</sql>  -->
+    <sql id="OFCS_MANAGEMENT_TCA_CONSTANTS_OVER_STATUS">'000002'</sql>
+    <sql id="OFCS_MANAGEMENT_TCA_CONSTANTS_TABLE_NAME">'902000'</sql>
+    <sql id="OFCS_MANAGEMENT_TCA_CONSTANTS_OVER_STATUS_KEY_NAME">'TCA_OVER_STATUS'</sql>
+    <sql id="OFCS_MANAGEMENT_TCA_CONSTANTS_TABLE_NAME_KEY_NAME">'TCA_TABLE_LIST'</sql>  
+    <sql id="OFCS_MANAGEMENT_TCA_CONSTANTS_COLUMN_NAME">'902000'</sql>  
+	
+	<sql id="BATCH_GROUP_SCHEDULE_CYCLE_TYPE">'070001'</sql><!-- [Batch Group] -->
+	
+	<sql id="EXCEPTION_CODE">'1001'</sql>					<!-- [Batch Job Designer] -->
+	<sql id="SCHEDULE_CYCLE_TYPE">'1002'</sql>				<!-- [Batch Job Designer] -->
+	<sql id="APPLICATION_TYPE">'1003'</sql>					<!-- [Application] -->
+	<sql id="LOG_TEMPLATE">'1004'</sql>         			<!-- [Log Template] -->
+	<sql id="RESOURCE_TYPE">'1005'</sql>        			<!-- [Resource] -->
+	<sql id="STATUS_LEVEL">'1006'</sql>         			<!-- [Resource] -->
+	<sql id="COMPONENT_ID">'1007'</sql>         			<!-- [PF&M Log History] -->
+	<sql id="EVENT_STATUS">'1008'</sql>         			<!-- [Process Status History] -->
+	<sql id="EXIT_STATUS">'1009'</sql>          			<!-- [Process Status History] -->
+	<sql id="BATCH_GRP_STATUS">'1010'</sql>     			<!-- [Batch Group History] -->
+	<sql id="BATCH_JOB_STATUS">'1011'</sql>     			<!-- [Batch Job History] -->
+	<sql id="FINISH_CODE">'1012'</sql>          			<!-- [Batch Job History] -->
+	<sql id="COMMAND_TYPE">'1013'</sql>         			<!-- [Command History] -->
+	<sql id="RESPONSE_TYPE">'1014'</sql>        			<!-- [Command History] -->
+	<sql id="LOGOUT_STATUS">'1015'</sql>        			<!-- [Login History] -->
+	<sql id="EXECUTE_PRIORITY">'1017'</sql>     			<!-- [Flow Designer] -->
+	<sql id="COMMON_CODE_LOG_GROUP">'1018'</sql>			<!-- 로그&알람설정 에서 사용하는 로그그룹코드 -->
+	<sql id="FAULT_TYPE">'1019'</sql> 			 			<!-- 장애발생유형 -->
+	<sql id="QUEUE_TYPE">'1020'</sql>			 			<!-- 프로세스등록시 -->
+	<sql id="FAULT_STATUS">'1022'</sql>		 				<!-- 시스템 장애 상태 -->
+	<sql id="SYSTEM_FAULT_TYPE">'1023'</sql>	 			<!-- 시스템 장애 타입 -->
+	<sql id="PLUG_IN_ALIAS">'1030'</sql>		 			<!-- Plug In Mgnt Alias 관련 -->
+	<sql id="PROCESS_PACKET_CYCLE">'1040'</sql>				<!-- 프로세스 패킷 갱신주기 -->
+	<sql id="CRT_PATH">'2000'</sql>							<!-- Telnet Program 경로 -->
+	
+		
+	<!-- Trace -->
+	<sql id="TRACE_TYPE">'000012'</sql>
+	
+	<sql id="TRACE_RESULT_TYPE_FB">'udbs_iux'</sql>
+	<sql id="TRACE_RESULT_TYPE_FT">'udbs_meta'</sql>
+	
+	<sql id="TRACE_KEYWORD">'050101'</sql>
+	<sql id="TRACE_MODE">'050102'</sql>
+	
+	
+	
+	<!-- Backup Recovery Target Type -->
+	<sql id="BACKUP_RECOVERY_TARGET_TYPE">'500002'</sql>
+	<sql id="BACKUP_RECOVERY_CYCLE_TYPE">'500003'</sql>
+	<sql id="BACKUP_RESTORE_GROUP_CODE">'500005'</sql>
+	<sql id="BACKUP_RESTORE_PROCESS_RESULT">'500007'</sql>
+	
+	
+	<sql id="DAILY_POLICY_BACKUP_DEFAULT">'110001'</sql>
+	<sql id="DAILY_POLICY_DELETE_DEFAULT">'110002'</sql>
+	<sql id="DAILY_POLICY_COMP_DEFAULT">'110003'</sql>
+	
+	<!-- System Information -->
+	<sql id="SYSTEM_INFORMATION_CODE">'100007'</sql>
+	<sql id="SYSTEM_INFORMATION_CODE_CPU">'1'</sql>
+	<sql id="SYSTEM_INFORMATION_CODE_KERNEL">'2'</sql>
+	<sql id="SYSTEM_INFORMATION_CODE_MEMORY">'3'</sql>
+	<sql id="SYSTEM_INFORMATION_CODE_MYSQL">'4'</sql>
+	<sql id="SYSTEM_INFORMATION_CODE_OS">'5'</sql>
+	<sql id="SYSTEM_INFORMATION_CODE_PYTHON">'6'</sql>
+	
+	<!-- Line Object Type -->
+	<sql id="LINE_OBJECT_TYPE_PACKAGE">'PK'</sql>
+	<sql id="LINE_OBJECT_TYPE_NODE">'NO'</sql>
+	<sql id="LINE_OBJECT_TYPE_PROCESS">'PR'</sql>
+	<sql id="LINE_OBJECT_TYPE_SCRIPT">'SC'</sql>
+	
+	<!-- Line Type -->
+	<sql id="LINE_TYPE_NETWORK">'N'</sql>
+	<sql id="LINE_TYPE_PROCESS">'P'</sql>
+	<sql id="LINE_TYPE_BATCHJOB">'B'</sql>
+	
+	<!-- Package Virtual YN Group Code -->
+	<sql id="PKG_VNF_YN">'010002'</sql>
+	
+	<sql id="ALARM_LEVEL_CONFIG_DEFAULT">'030103'</sql>
+
+</mapper>

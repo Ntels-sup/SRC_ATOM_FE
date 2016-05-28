@@ -1,0 +1,468 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ntels.avocado.dao.atom.config.networkmanager.NetworkManagerMapper">
+
+	<select id="listPkg" resultType="com.ntels.avocado.domain.atom.config.networkmanager.Pkg">
+		SELECT P.PKG_NAME,
+			P.VNF_YN,
+			(SELECT CODE_NAME FROM TAT_COMMON_CODE WHERE GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.PKG_VNF_YN"/> AND DETAIL_CD = P.VNF_YN) AS VNF_TEXT,
+			P.DB_NAME,
+			P.LICENSE,
+			P.DESCRIPTION,
+			P.IMAGE_NO,
+			I.IMAGE_X,
+			I.IMAGE_Y,
+			I.IMAGE_WIDTH,
+			I.IMAGE_HEIGHT,
+			I.IMAGE_NAME,
+			I.IMAGE_BGCOLOR
+		FROM TAT_PKG P
+		LEFT OUTER JOIN TAT_IMAGE I ON P.IMAGE_NO = I.IMAGE_NO
+	</select>
+	
+	<select id="listNodeGrp" resultType="com.ntels.avocado.domain.atom.config.networkmanager.NodeGrp">
+		SELECT NODE_GRP_ID,
+			NODE_GRP_NAME
+		FROM TAT_NODE_GRP
+	</select>
+	
+	<select id="listNodeType" resultType="com.ntels.avocado.domain.atom.config.processmanager.NodeType">
+		SELECT NODE_TYPE,
+			PKG_NAME
+		FROM TAT_NODE_TYPE
+	</select>
+	
+	<select id="getNodeGrp" resultType="com.ntels.avocado.domain.atom.config.networkmanager.NodeGrp" parameterType="com.ntels.avocado.domain.atom.config.networkmanager.NodeGrp">
+		SELECT NODE_GRP_ID,
+			NODE_GRP_NAME
+		FROM TAT_NODE_GRP
+		WHERE NODE_GRP_ID = #{node_grp_id}
+	</select>
+	
+	<insert id="insertNodeGrp" parameterType="com.ntels.avocado.domain.atom.config.networkmanager.NodeGrp">
+		INSERT INTO TAT_NODE_GRP (
+			NODE_GRP_ID,
+			NODE_GRP_NAME
+		) VALUES (
+			#{node_grp_id},
+			#{node_grp_name}
+		)
+	</insert>
+	
+	<update id="updateNodeGrp" parameterType="com.ntels.avocado.domain.atom.config.networkmanager.NodeGrp">
+		UPDATE TAT_NODE_GRP SET NODE_GRP_NAME = #{node_grp_name}
+		WHERE NODE_GRP_ID = #{node_grp_id}
+	</update>
+	
+	<delete id="deleteNodeGrp" parameterType="com.ntels.avocado.domain.atom.config.networkmanager.NodeGrp">
+		DELETE FROM TAT_NODE_GRP WHERE NODE_GRP_ID = #{node_grp_id}
+	</delete>
+
+	<select id="listNode" resultType="com.ntels.avocado.domain.atom.config.networkmanager.Node">
+		SELECT N.NODE_TYPE,
+			N.NODE_NAME,
+			N.IP,
+			N.INTERNAL_YN,
+			N.USE_YN,
+			N.RDDC_YN,
+			DATE_FORMAT(N.CREATE_DATE, (SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{language})) AS CREATE_DATE,
+			DATE_FORMAT(N.UPDATE_DATE, (SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{language})) AS UPDATE_DATE,
+			N.NODE_GRP_ID,
+			N.IMAGE_NO,
+			N.PKG_NAME,
+			N.DESCRIPTION,
+			N.NODE_NAME AS NODE_NAME_OLD,
+			I.IMAGE_X,
+			I.IMAGE_Y,
+			I.IMAGE_NAME,
+			I.IMAGE_BGCOLOR,
+			I.IMAGE_UUID
+		FROM TAT_NODE_GUI N
+		LEFT OUTER JOIN TAT_NODE_TYPE T ON N.NODE_TYPE = T.NODE_TYPE
+		LEFT OUTER JOIN TAT_IMAGE I ON N.IMAGE_NO = I.IMAGE_NO
+	</select>
+	
+	<select id="listMonitoringNodeGUI" resultType="com.ntels.avocado.domain.atom.config.networkmanager.Node" parameterType="String">
+		SELECT N.NODE_TYPE,
+			N.NODE_NAME,
+			N.IP,
+			N.INTERNAL_YN,
+			N.USE_YN,
+			N.RDDC_YN,
+			DATE_FORMAT(N.CREATE_DATE, (SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{language})) AS CREATE_DATE,
+			DATE_FORMAT(N.UPDATE_DATE, (SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{language})) AS UPDATE_DATE,
+			N.NODE_GRP_ID,
+			N.IMAGE_NO,
+			N.PKG_NAME,
+			N.DESCRIPTION,
+			N.NODE_NAME AS NODE_NAME_OLD,
+			I.IMAGE_X,
+			I.IMAGE_Y,
+			I.IMAGE_NAME,
+			I.IMAGE_UUID,
+			T.SCALE_YN,
+			(SELECT COUNT(*) FROM TAT_NODE O WHERE O.PKG_NAME = N.PKG_NAME AND O.NODE_TYPE = N.NODE_TYPE AND O.USE_YN = 'Y') AS NODE_COUNT,
+			(SELECT COUNT(*) FROM TAT_PROCESS P WHERE P.PKG_NAME = N.PKG_NAME AND P.NODE_TYPE = N.NODE_TYPE AND P.USE_YN = 'Y') AS PROC_COUNT,
+			(SELECT COUNT(*) FROM TAT_SVC S WHERE S.PKG_NAME = N.PKG_NAME AND S.NODE_TYPE = N.NODE_TYPE) AS SVC_COUNT,
+			(SELECT COUNT(*) FROM TAT_NODE_GUI G, TAT_LINE_DEF L WHERE L.SOURCE_ID = N.IMAGE_NO AND L.TARGET_ID = G.IMAGE_NO AND G.INTERNAL_YN = 'N' AND G.USE_YN = 'Y')
+				+ (SELECT COUNT(*) FROM TAT_NODE_GUI G, TAT_LINE_DEF L WHERE L.TARGET_ID = N.IMAGE_NO AND L.SOURCE_ID = G.IMAGE_NO AND G.INTERNAL_YN = 'N' AND G.USE_YN = 'Y') AS LINKED_COUNT,
+			O.NODE_STATUS_CCD,
+			O.PROC_STATUS_CCD
+		FROM TAT_NODE_GUI N
+		LEFT OUTER JOIN TAT_NODE_TYPE T ON N.NODE_TYPE = T.NODE_TYPE
+		LEFT OUTER JOIN TAT_IMAGE I ON N.IMAGE_NO = I.IMAGE_NO
+		LEFT OUTER JOIN TAT_NODE O ON O.NODE_NAME = N.NODE_NAME
+		WHERE N.USE_YN = 'Y'
+	</select>
+	
+	<select id="listMonitoringNode" resultType="com.ntels.avocado.domain.atom.config.networkmanager.Node" parameterType="String">
+		SELECT N.NODE_NO,
+			N.NODE_TYPE,
+			N.NODE_NAME,
+			N.IP,
+			N.INTERNAL_YN,
+			N.USE_YN,
+			N.RDDC_YN,
+			DATE_FORMAT(N.CREATE_DATE, (SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{language})) AS CREATE_DATE,
+			DATE_FORMAT(N.UPDATE_DATE, (SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{language})) AS UPDATE_DATE,
+			N.NODE_GRP_ID,
+			N.IMAGE_NO,
+			N.PKG_NAME,
+			N.DESCRIPTION,
+			N.NODE_NAME AS NODE_NAME_OLD,
+			T.SCALE_YN,
+			(SELECT COUNT(*) FROM TAT_NODE O WHERE O.PKG_NAME = N.PKG_NAME AND O.NODE_TYPE = N.NODE_TYPE AND O.USE_YN = 'Y') AS NODE_COUNT,
+			(SELECT COUNT(*) FROM TAT_PROCESS P WHERE P.PKG_NAME = N.PKG_NAME AND P.NODE_TYPE = N.NODE_TYPE AND P.USE_YN = 'Y') AS PROC_COUNT,
+			N.NODE_STATUS_CCD,
+			N.PROC_STATUS_CCD
+		FROM TAT_NODE N
+		LEFT OUTER JOIN TAT_NODE_TYPE T ON N.NODE_TYPE = T.NODE_TYPE
+		WHERE N.USE_YN = 'Y'
+	</select>
+	
+	<select id="listLine" resultType="com.ntels.avocado.domain.atom.config.networkmanager.Line" parameterType="String">
+		SELECT L.LINE_ID,
+			L.SOURCE_TYPE,
+			(SELECT N.NODE_NAME FROM TAT_NODE_GUI N WHERE N.IMAGE_NO = L.SOURCE_ID) AS SOURCE_ID,
+			L.SOURCE_PORT,
+			L.TARGET_TYPE,
+			(SELECT N.NODE_NAME FROM TAT_NODE_GUI N WHERE N.IMAGE_NO = L.TARGET_ID) AS TARGET_ID,
+			L.TARGET_PORT,
+			L.ROUTER,
+			L.LINE_TYPE,
+			L.LINE_DESC
+		FROM TAT_LINE_DEF L
+		WHERE L.LINE_TYPE = <include refid="com.ntels.avocado.dao.common.CodeDefine.LINE_TYPE_NETWORK"/>
+	</select>
+	
+	<select id="listConnection" resultType="com.ntels.avocado.domain.atom.config.networkmanager.Line" parameterType="String">
+		SELECT C.MY_IP,
+			C.PEER_IP,
+			<!-- C.SERVER_L4_PORT, -->
+			C.MY_NODE_NO,
+			C.PEER_NODE_NO,
+			C.L7_PROTOCOL,
+			C.STATUS_CCD,
+			C.CNT,
+			C.CREATE_DATE,
+			C.UPDATE_DATE,
+			S.NODE_NAME AS SOURCE_NAME,
+			T.NODE_NAME AS TARGET_NAME
+		FROM TAT_CONNECT C,
+			TAT_NODE S,
+			TAT_NODE T
+		WHERE C.MY_NODE_NO = S.NODE_NO
+			AND S.NODE_NO = C.MY_NODE_NO
+			AND T.NODE_NO = C.PEER_NODE_NO
+	</select>
+	
+	<delete id="deleteImages">
+		DELETE FROM TAT_IMAGE WHERE IMAGE_NO IN (SELECT IMAGE_NO FROM TAT_PKG UNION SELECT IMAGE_NO FROM TAT_NODE_GUI UNION SELECT IMAGE_NO FROM TAT_NODE)
+	</delete>
+	
+	<update id="resetPkgPosition">
+		 UPDATE TAT_IMAGE SET IMAGE_X = NULL, IMAGE_Y = NULL WHERE IMAGE_NO IN (SELECT IMAGE_NO FROM TAT_PKG)
+	</update>
+	
+	<update id="resetNodePosition">
+		UPDATE TAT_IMAGE SET IMAGE_X = NULL, IMAGE_Y = NULL WHERE IMAGE_NO IN (SELECT IMAGE_NO FROM TAT_NODE_GUI UNION SELECT IMAGE_NO FROM TAT_NODE_GUI UNION SELECT IMAGE_NO FROM TAT_NODE)
+	</update>
+	
+	<delete id="deleteLine">
+		DELETE FROM TAT_LINE_DEF WHERE LINE_TYPE = <include refid="com.ntels.avocado.dao.common.CodeDefine.LINE_TYPE_NETWORK"/>
+	</delete>
+	
+	<insert id="insertImage" parameterType="com.ntels.avocado.domain.atom.config.networkmanager.AtomImage">
+		<selectKey keyProperty="image_no" resultType="String" order="BEFORE">
+			SELECT IFNULL(MAX(IMAGE_NO), 0) + 1 AS IMAGE_NO FROM TAT_IMAGE
+		</selectKey>
+		INSERT INTO TAT_IMAGE (
+			IMAGE_NO,
+			IMAGE_UUID,
+			IMAGE_X,
+			IMAGE_Y,
+			IMAGE_NAME,
+			IMAGE_BGCOLOR,
+			IMAGE_HEIGHT,
+			IMAGE_WIDTH
+		) VALUES (
+			#{image_no},
+			#{image_uuid},
+			#{image_x},
+			#{image_y},
+			#{image_name},
+			#{image_bgcolor},
+			#{image_height},
+			#{image_width}
+		)
+	</insert>
+	
+	<update id="updateImage" parameterType="com.ntels.avocado.domain.atom.config.networkmanager.AtomImage">
+		UPDATE TAT_IMAGE SET
+			IMAGE_UUID = #{image_uuid},
+			IMAGE_X = #{image_x},
+			IMAGE_Y = #{image_y},
+			IMAGE_NAME = #{image_name},
+			IMAGE_BGCOLOR = #{image_bgcolor},
+			IMAGE_HEIGHT = #{image_height},
+			IMAGE_WIDTH = #{image_width}
+		WHERE IMAGE_NO = #{image_no}
+	</update>
+	
+	<update id="updatePkgPosition" parameterType="com.ntels.avocado.domain.atom.config.networkmanager.Pkg">
+		UPDATE TAT_PKG SET IMAGE_NO = #{image_no} WHERE PKG_NAME = #{pkg_name}
+	</update>
+	
+	<select id="getNodeGUI" resultType="com.ntels.avocado.domain.atom.config.networkmanager.Node" parameterType="com.ntels.avocado.domain.atom.config.networkmanager.Node">
+		SELECT NODE_TYPE,
+			NODE_NAME,
+			IP,
+			INTERNAL_YN,
+			USE_YN,
+			RDDC_YN,
+			CREATE_DATE,
+			NODE_GRP_ID,
+			IMAGE_NO,
+			PKG_NAME,
+			DESCRIPTION
+		FROM TAT_NODE_GUI
+		WHERE NODE_NAME = #{node_name_old}
+	</select>
+	
+	<select id="getNodeGUIByName" resultType="com.ntels.avocado.domain.atom.config.networkmanager.Node" parameterType="com.ntels.avocado.domain.atom.config.networkmanager.Node">
+		SELECT NODE_TYPE,
+			NODE_NAME,
+			IP,
+			INTERNAL_YN,
+			USE_YN,
+			RDDC_YN,
+			CREATE_DATE,
+			NODE_GRP_ID,
+			IMAGE_NO,
+			PKG_NAME,
+			DESCRIPTION
+		FROM TAT_NODE_GUI
+		WHERE NODE_NAME = #{node_name}
+	</select>
+	
+	<select id="getNodeByName" resultType="com.ntels.avocado.domain.atom.config.networkmanager.Node" parameterType="com.ntels.avocado.domain.atom.config.networkmanager.Node">
+		SELECT NODE_NO,
+			NODE_TYPE,
+			UUID,
+			NODE_NAME,
+			IP,
+			INTERNAL_YN,
+			USE_YN,
+			RDDC_YN,
+			CREATE_DATE,
+			NODE_GRP_ID,
+			IMAGE_NO,
+			PKG_NAME,
+			DESCRIPTION
+		FROM TAT_NODE
+		WHERE NODE_NAME = #{node_name}
+	</select>
+	
+	<select id="getNode" resultType="com.ntels.avocado.domain.atom.config.networkmanager.Node" parameterType="com.ntels.avocado.domain.atom.config.networkmanager.Node">
+		SELECT NODE_NO,
+			NODE_TYPE,
+			UUID,
+			NODE_NAME,
+			IP,
+			INTERNAL_YN,
+			USE_YN,
+			RDDC_YN,
+			CREATE_DATE,
+			NODE_GRP_ID,
+			IMAGE_NO,
+			PKG_NAME,
+			DESCRIPTION
+		FROM TAT_NODE
+		WHERE UPPER(NODE_NAME) = UPPER(#{node_name_old})
+	</select>
+	
+	<insert id="insertLine" parameterType="com.ntels.avocado.domain.atom.config.networkmanager.Line">
+		<selectKey keyProperty="line_id" resultType="String" order="BEFORE">
+			SELECT IFNULL(MAX(LINE_ID), 0) + 1 AS LINE_ID FROM TAT_LINE_DEF
+		</selectKey>
+		INSERT INTO TAT_LINE_DEF (
+			LINE_ID,
+			SOURCE_TYPE,
+			SOURCE_ID,
+			SOURCE_PORT,
+			TARGET_TYPE,
+			TARGET_ID,
+			TARGET_PORT,
+			ROUTER,
+			LINE_TYPE,
+			LINE_DESC
+		) VALUES (
+			#{line_id},
+			#{source_type},
+			(SELECT IMAGE_NO FROM TAT_NODE_GUI WHERE NODE_NAME = #{source_name}),
+			#{source_port},
+			#{target_type},
+			(SELECT IMAGE_NO FROM TAT_NODE_GUI WHERE NODE_NAME = #{target_name}),
+			#{target_port},
+			#{router},
+			<include refid="com.ntels.avocado.dao.common.CodeDefine.LINE_TYPE_NETWORK"/>,
+			#{line_desc}
+		)
+	</insert>
+	
+	<insert id="insertNodeGUI" parameterType="com.ntels.avocado.domain.atom.config.networkmanager.Node">
+		INSERT INTO TAT_NODE_GUI (
+			NODE_TYPE,
+			NODE_NAME,
+			IP,
+			INTERNAL_YN,
+			USE_YN,
+			RDDC_YN,
+			CREATE_DATE,
+			UPDATE_DATE,
+			NODE_GRP_ID,
+			IMAGE_NO,
+			PKG_NAME,
+			DESCRIPTION
+		) VALUES(
+			#{node_type},
+			#{node_name},
+			#{ip},
+			#{internal_yn},
+			#{use_yn},
+			#{rddc_yn},
+			NOW(),
+			NOW(),
+			#{node_grp_id},
+			#{image_no},
+			#{pkg_name},
+			#{description}
+		)
+	</insert>
+	
+	<insert id="insertNode" parameterType="com.ntels.avocado.domain.atom.config.networkmanager.Node">
+		<selectKey keyProperty="node_no" resultType="String" order="BEFORE">
+			SELECT IFNULL(MAX(NODE_NO), 0) + 1 AS NODE_NO FROM TAT_NODE
+		</selectKey>
+		INSERT INTO TAT_NODE (
+			NODE_NO,
+			NODE_TYPE,
+			UUID,
+			NODE_NAME,
+			IP,
+			INTERNAL_YN,
+			USE_YN,
+			RDDC_YN,
+			CREATE_DATE,
+			UPDATE_DATE,
+			NODE_GRP_ID,
+			IMAGE_NO,
+			PKG_NAME,
+			DESCRIPTION
+		) VALUES(
+			#{node_no},
+			#{node_type},
+			#{uuid},
+			#{node_name},
+			#{ip},
+			#{internal_yn},
+			#{use_yn},
+			#{rddc_yn},
+			NOW(),
+			NOW(),
+			#{node_grp_id},
+			#{image_no},
+			#{pkg_name},
+			#{description}
+		)
+	</insert>
+	
+	<update id="updateNodeGUI" parameterType="com.ntels.avocado.domain.atom.config.networkmanager.Node">
+		UPDATE TAT_NODE_GUI SET
+			NODE_NAME = #{node_name},
+			NODE_TYPE = #{node_type},
+			IP = #{ip},
+			INTERNAL_YN = #{internal_yn},
+			USE_YN = #{use_yn},
+			RDDC_YN = #{rddc_yn},
+			NODE_GRP_ID = #{node_grp_id},
+			PKG_NAME = #{pkg_name},
+			DESCRIPTION = #{description},
+			IMAGE_NO = #{image_no},
+			UPDATE_DATE = NOW()
+		WHERE
+			NODE_NAME = #{node_name_old}
+	</update>
+	
+	<update id="updateNodeGUIByName" parameterType="com.ntels.avocado.domain.atom.config.networkmanager.Node">
+		UPDATE TAT_NODE_GUI SET
+			NODE_TYPE = #{node_type},
+			IP = #{ip},
+			INTERNAL_YN = #{internal_yn},
+			USE_YN = #{use_yn},
+			RDDC_YN = #{rddc_yn},
+			NODE_GRP_ID = #{node_grp_id},
+			PKG_NAME = #{pkg_name},
+			DESCRIPTION = #{description},
+			IMAGE_NO = #{image_no},
+			UPDATE_DATE = NOW()
+		WHERE
+			NODE_NAME = #{node_name}
+	</update>
+	
+	<update id="updateNode" parameterType="com.ntels.avocado.domain.atom.config.networkmanager.Node">
+		UPDATE TAT_NODE SET
+			NODE_NAME = #{node_name},
+			NODE_TYPE = #{node_type},
+			IP = #{ip},
+			INTERNAL_YN = #{internal_yn},
+			USE_YN = #{use_yn},
+			RDDC_YN = #{rddc_yn},
+			NODE_GRP_ID = #{node_grp_id},
+			PKG_NAME = #{pkg_name},
+			DESCRIPTION = #{description},
+			IMAGE_NO = #{image_no},
+			UPDATE_DATE = NOW()
+		WHERE
+			NODE_NAME = #{node_name_old}
+	</update>
+	
+	<update id="updateNodeByName" parameterType="com.ntels.avocado.domain.atom.config.networkmanager.Node">
+		UPDATE TAT_NODE SET
+			NODE_NAME = #{node_name},
+			NODE_TYPE = #{node_type},
+			IP = #{ip},
+			INTERNAL_YN = #{internal_yn},
+			USE_YN = #{use_yn},
+			RDDC_YN = #{rddc_yn},
+			NODE_GRP_ID = #{node_grp_id},
+			PKG_NAME = #{pkg_name},
+			DESCRIPTION = #{description},
+			IMAGE_NO = #{image_no},
+			UPDATE_DATE = NOW()
+		WHERE
+			NODE_NAME = #{node_name}
+	</update>
+</mapper>

@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ntels.avocado.dao.atom.security.usergroup.UserGroupMapper">
+
+	<select id="listUserGroup" resultType="java.util.Map">
+		SELECT 'all' AS ID
+	         , 'ALL' AS NAME
+		UNION   
+		(SELECT GROUP_NO   AS ID
+		      , GROUP_NAME AS NAME
+		   FROM TAT_USER_GROUP
+		  WHERE 1=1
+		  ORDER BY GROUP_NO)
+	</select>
+	
+	<select id="userGroupUseCnt" resultType="int">
+		SELECT COUNT(*)
+		  FROM TAT_USER
+		 WHERE 1=1
+		   AND GROUP_NO = #{condition.group_no}
+	</select>
+	
+	<select id="duplChkGrpName" resultType="int">
+		SELECT COUNT(*)
+		  FROM TAT_USER_GROUP
+		 WHERE 1=1
+	   	   AND GROUP_NAME = #{groupName}
+	   	   <if test="groupNo != '' and groupNo != null ">
+		   AND NOT GROUP_NO = #{groupNo}
+		   </if>
+	</select>
+	
+	<select id="getAddGroupId" resultType="String">
+		SELECT MAX(GROUP_NO)+1
+		  FROM TAT_USER_GROUP
+		 WHERE 1=1
+	</select>
+	
+	<select id="count" resultType="int">
+		SELECT COUNT(*)
+		  FROM (SELECT A.GROUP_NO
+				     , A.GROUP_NAME
+				     , GROUP_CONCAT(B.PKG_NAME SEPARATOR ', ') AS PKG_NAME
+				     , A.DESCRIPTION
+				  FROM TAT_USER_GROUP A 
+				       LEFT OUTER JOIN TAT_USER_GROUP_PKG B 
+				       ON A.GROUP_NO = B.GROUP_NO
+				 WHERE 1=1
+				   <if test="condition.groupNo != 'all' and condition.groupNo != '' and condition.groupNo != null ">
+				   AND A.GROUP_NO = #{condition.groupNo}
+				   </if>
+				 GROUP BY A.GROUP_NO
+		       ) A
+	</select>
+	
+	<select id="list" resultType="com.ntels.avocado.domain.atom.security.usergroup.UserGroupDomain">
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_header" />
+			SELECT A.GROUP_NO
+			     , A.GROUP_NAME
+			     , GROUP_CONCAT(B.PKG_NAME SEPARATOR ', ') AS PKG_NAME
+			     , A.DESCRIPTION
+			  FROM TAT_USER_GROUP A 
+			       LEFT OUTER JOIN TAT_USER_GROUP_PKG B 
+			       ON A.GROUP_NO = B.GROUP_NO
+			 WHERE 1=1
+			   <if test="condition.groupNo != 'all' and condition.groupNo != '' and condition.groupNo != null ">
+			   AND A.GROUP_NO = #{condition.groupNo}
+			   </if>
+			 GROUP BY A.GROUP_NO
+			 ORDER BY A.GROUP_NO DESC
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_footer" />
+	</select>
+	
+	<select id="detailUserGroup" resultType="com.ntels.avocado.domain.atom.security.usergroup.UserGroupDomain">
+		SELECT GROUP_NO
+		     , GROUP_NAME
+		     , DESCRIPTION
+		  FROM TAT_USER_GROUP 
+		 WHERE 1=1
+		   AND GROUP_NO = #{condition.group_no}
+	</select>
+	
+	<select id="detailUserGroupPkg" resultType="com.ntels.avocado.domain.atom.security.usergroup.UserGroupDomain">
+		SELECT @rownum:=@rownum+1 AS rownum
+		     , GROUP_NO
+		     , PKG_NAME
+		     , DESCRIPTION
+		  FROM TAT_USER_GROUP_PKG
+		     , (SELECT @rownum:=0) TMP
+		 WHERE 1=1
+		   AND GROUP_NO = #{condition.group_no}
+	</select>
+
+	<insert id="addUserGroup" parameterType="com.ntels.avocado.domain.atom.security.usergroup.UserGroupDomain">
+		INSERT INTO TAT_USER_GROUP
+			(GROUP_NO, GROUP_NAME, DESCRIPTION)
+		VALUES
+			(#{condition.group_no}, #{condition.group_name}, #{condition.userGroupDesc})
+	</insert>
+	
+	<insert id="addUserGroupPkg" parameterType="com.ntels.avocado.domain.atom.security.usergroup.UserGroupDomain">
+		INSERT INTO TAT_USER_GROUP_PKG
+			(GROUP_NO, PKG_NAME, DESCRIPTION)
+		VALUES
+			(#{condition.group_no}, #{condition.pkg_name}, #{condition.userGroupPkgDesc})
+	</insert>
+	
+	<update id="modifyUserGroup" parameterType="com.ntels.avocado.domain.atom.security.usergroup.UserGroupDomain">
+		UPDATE TAT_USER_GROUP
+		   SET GROUP_NAME = #{condition.group_name}
+		     , DESCRIPTION = #{condition.userGroupDesc}
+		 WHERE 1=1
+		   AND GROUP_NO = #{condition.group_no} 
+	</update>
+		
+	<delete id="removeUserGroup" parameterType="com.ntels.avocado.domain.atom.security.usergroup.UserGroupDomain">
+		DELETE FROM TAT_USER_GROUP
+		 WHERE 1=1
+		   AND GROUP_NO = #{condition.group_no}
+	</delete>
+	
+	<delete id="removeUserGroupPkg" parameterType="com.ntels.avocado.domain.atom.security.usergroup.UserGroupDomain">
+		DELETE FROM TAT_USER_GROUP_PKG
+		 WHERE 1=1
+		   AND GROUP_NO = #{condition.group_no}
+	</delete>
+
+	<select id="listExcel" resultType="java.util.LinkedHashMap">
+		SELECT A.GROUP_NO AS 'No'
+		     , A.GROUP_NAME AS 'User Group'
+		     , IFNULL(GROUP_CONCAT(B.PKG_NAME SEPARATOR ', '),'') AS 'Package'
+		     , IFNULL(A.DESCRIPTION,'') AS 'Description'
+		  FROM TAT_USER_GROUP A
+		       LEFT OUTER JOIN  TAT_USER_GROUP_PKG B
+		       ON A.GROUP_NO = B.GROUP_NO
+		 WHERE 1=1
+		   <if test="condition.groupNo != 'all' and condition.groupNo != '' and condition.groupNo != null ">
+		   AND A.GROUP_NO = #{condition.groupNo}
+		   </if>
+		  GROUP BY A.GROUP_NO
+		  ORDER BY A.GROUP_NO DESC
+	</select>
+		
+</mapper>

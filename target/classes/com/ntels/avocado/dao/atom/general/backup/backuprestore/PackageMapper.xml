@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ntels.avocado.dao.atom.general.backup.backuprestore.PackageMapper">
+
+	<select id="listMntGroup" resultType="com.ntels.avocado.domain.atom.general.backup.backuprestore.PackageDomain">
+	 /* [PackageMapper.xml].[listMntGroup].Update(20160404) */
+		SELECT MG.PKG_NAME
+		     , MG.NODE_TYPE
+		     , MG.GROUP_CODE
+		     , MG.CATEGORY
+		     , MG.STATE
+		     , MG.BACKUP_FILE
+		     , MG.DESCRIPTION
+		  FROM TAT_MNT_GROUP			MG
+		 WHERE 1=1
+		   AND MG.CATEGORY				= 'PKG'
+	</select>
+
+	<select id="listBackupHist" resultType="com.ntels.avocado.domain.atom.general.backup.backuprestore.PackageDomain">
+	 /* [PackageMapper.xml].[listBackupHist].Update(20160404) */
+		SELECT MG.PKG_NAME
+		     , MG.NODE_TYPE
+		     , MG.GROUP_CODE
+		     , MG.CATEGORY
+		     , MG.STATE
+		     , MG.BACKUP_FILE
+		     , MG.DESCRIPTION
+		     , BH.NODE_NO
+		     , BH.RESULT_NO
+		     , DATE_FORMAT(BH.PRC_DATE, (SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{pkgDomain.language}))
+		     							PRC_DATE
+		     , BH.DST_FLAG
+		     , BH.PROCESS_RESULT
+		     , BH.BACKUP_NAME
+		     , BH.BACKUP_PATH
+		     , BH.FILE_SIZE
+		     , DATE_FORMAT(BH.REG_DATE, (SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{pkgDomain.language}))
+		     							REG_DATE
+		     , BH.REG_ID
+		     , BH.DESCRIPTION
+		     , N.NODE_NAME
+		  FROM TAT_MNT_GROUP			MG
+		     , TAT_MNT_BACKUP_HIST		BH
+             , TAT_NODE					N
+		 WHERE 1=1
+		   AND MG.PKG_NAME				= BH.PKG_NAME
+		   AND MG.NODE_TYPE				= BH.NODE_TYPE
+		   AND MG.GROUP_CODE			= BH.GROUP_CODE
+		   AND MG.NODE_TYPE				= N.NODE_TYPE
+		   AND MG.PKG_NAME				= N.PKG_NAME
+		   AND BH.NODE_NO				= N.NODE_NO
+		   
+		   <if test="pkgDomain.system_id2 != null and pkgDomain.system_id2 != '' ">
+		   AND N.NODE_NAME				IN
+				<foreach   collection="pkgDomain.systemArray" item ="systemArray" index="index"   open="(" separator="," close=")" >
+				 #{systemArray, jdbcType=INTEGER}
+				</foreach>
+		   </if>
+	</select>
+	
+	<!-- 
+	 * Back up 정보
+	  -->
+	<select id="getFileList" resultType="hashmap">
+		SELECT CASE CODE_NAME WHEN 'Config' THEN 'Package Configuration' WHEN 'System' THEN 'System Configuration' ELSE CODE_NAME END AS CODE_NAME
+		     , GROUP_CODE
+		     , CATEGORY
+		     , BACKUP_NAME
+		     , BACKUP_PATH
+		     , FILE_SIZE
+		     , SORT_DATE
+		     , DATE
+			FROM (
+				SELECT TRIM(SUBSTRING_INDEX(A.CODE_NAME,' ',1)) AS CODE_NAME
+				     , B.GROUP_CODE
+				     , B.CATEGORY
+				     , B.BACKUP_NAME
+				     , B.BACKUP_PATH
+				     , FORMAT(B.FILE_SIZE,0) AS FILE_SIZE
+				     , DATE_FORMAT(B.REG_DATE,(SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language})) AS SORT_DATE
+				     , DATE_FORMAT(B.REG_DATE,(SELECT DB_PATTERN_TIME FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language})) AS DATE		     
+		            FROM (SELECT DETAIL_CODE
+		                       , CODE_NAME 
+		                      FROM TAT_COMMON_CODE 
+		                     WHERE GROUP_CODE = '500005' 
+		                       AND DETAIL_CODE IN (100000,100002,100003,100004,100005,100006,100007,100008)
+		                 ) A
+		               , TAT_BACKUP_HIST B
+		           WHERE B.NODE_ID 			= #{condition.node_id}
+		             AND A.DETAIL_CODE 		= B.GROUP_CODE
+		             AND B.CATEGORY 		= 'PKG'
+		             AND B.PROCESS_RESULT 	= 'Y'
+		        ) TBL ORDER BY SORT_DATE DESC
+    </select>
+    
+    	    
+
+    <update id="insertSample1" parameterType="com.ntels.avocado.domain.atom.general.backup.backuprestore.PackageDomain">
+    /* [PackageMapper.xml].[insertSample1] */
+    	INSERT INTO TAT_MNT_GROUP (
+			PKG_NAME,
+			NODE_TYPE,
+			GROUP_CODE,
+			CATEGORY,
+			STATE,
+			BACKUP_FILE,
+			DESCRIPTION
+		) VALUES (
+			#{pkg_name		, jdbcType=VARCHAR},
+			#{node_type		, jdbcType=VARCHAR},
+			#{group_code	, jdbcType=VARCHAR},
+			#{category		, jdbcType=VARCHAR},
+			#{state			, jdbcType=VARCHAR},
+			#{backup_file	, jdbcType=VARCHAR},
+			#{description	, jdbcType=VARCHAR}
+		)		
+    </update>
+    
+    <update id="insertSample2" parameterType="com.ntels.avocado.domain.atom.general.backup.backuprestore.PackageDomain">
+    /* [PackageMapper.xml].[insertSample2] */
+    	INSERT INTO TAT_MNT_BACKUP_HIST (
+			PKG_NAME,
+			NODE_TYPE,
+			NODE_NO,
+			RESULT_NO,
+			PRC_DATE,
+			GROUP_CODE,
+			DST_FLAG,
+			PROCESS_RESULT,
+			BACKUP_NAME,
+			BACKUP_PATH,
+			FILE_SIZE,
+			REG_DATE,
+			REG_ID,
+			DESCRIPTION
+		) VALUES (
+			#{pkg_name		, jdbcType=VARCHAR},
+			#{node_type		, jdbcType=VARCHAR},
+			#{node_no		, jdbcType=VARCHAR},
+			#{result_no		, jdbcType=VARCHAR},
+			STR_TO_DATE(#{prc_date, jdbcType=VARCHAR},'%Y-%m-%d'),
+			#{group_code	, jdbcType=VARCHAR},
+			#{dst_flag		, jdbcType=VARCHAR},
+			#{process_result, jdbcType=VARCHAR},
+			#{backup_name	, jdbcType=VARCHAR},
+			#{backup_path	, jdbcType=VARCHAR},
+			#{file_size		, jdbcType=VARCHAR},
+			STR_TO_DATE(#{reg_date, jdbcType=VARCHAR},'%Y-%m-%d'),
+			#{reg_id		, jdbcType=VARCHAR},
+			#{description	, jdbcType=VARCHAR}
+		)		
+    </update>
+</mapper>

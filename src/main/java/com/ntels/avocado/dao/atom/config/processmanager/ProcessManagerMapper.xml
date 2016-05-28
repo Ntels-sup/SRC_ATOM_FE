@@ -1,0 +1,403 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ntels.avocado.dao.atom.config.processmanager.ProcessManagerMapper">
+
+	<select id="listPkg" resultType="com.ntels.avocado.domain.atom.config.networkmanager.Pkg">
+		SELECT P.PKG_NAME
+		FROM TAT_PKG P
+		LEFT OUTER JOIN TAT_IMAGE I ON P.IMAGE_NO = I.IMAGE_NO
+	</select>
+
+	<select id="listNodeType" resultType="com.ntels.avocado.domain.atom.config.processmanager.NodeType">
+		SELECT NODE_TYPE,
+			PKG_NAME
+		FROM TAT_NODE_TYPE
+	</select>
+	
+	<select id="listSvc" resultType="com.ntels.avocado.domain.atom.config.processmanager.Svc">
+		SELECT PKG_NAME,
+			NODE_TYPE,
+			SVC_NO,
+			SVC_NAME,
+			DESCRIPTION
+		FROM TAT_SVC
+	</select>
+	
+	<select id="listNodeSvc" resultType="com.ntels.avocado.domain.atom.config.processmanager.Svc" parameterType="com.ntels.avocado.domain.atom.config.networkmanager.Node">
+		SELECT PKG_NAME,
+			NODE_TYPE,
+			SVC_NO,
+			SVC_NAME,
+			DESCRIPTION
+		FROM TAT_SVC
+		WHERE PKG_NAME = #{pkg_name}
+			AND NODE_TYPE = #{node_type}
+	</select>
+	
+	<select id="getSvc" resultType="com.ntels.avocado.domain.atom.config.processmanager.Svc" parameterType="com.ntels.avocado.domain.atom.config.processmanager.Svc">
+		SELECT PKG_NAME,
+			NODE_TYPE,
+			SVC_NO,
+			SVC_NAME,
+			DESCRIPTION
+		FROM TAT_SVC
+		WHERE SVC_NO = #{svc_no}
+	</select>
+	
+	<insert id="insertSvc" parameterType="com.ntels.avocado.domain.atom.config.processmanager.Svc">
+		INSERT INTO TAT_SVC (
+			PKG_NAME,
+			NODE_TYPE,
+			SVC_NO,
+			SVC_NAME,
+			DESCRIPTION
+		) VALUES (
+			#{pkg_name},
+			#{node_type},
+			#{svc_no},
+			#{svc_name},
+			#{description}
+		)
+	</insert>
+	
+	<update id="updateSvc" parameterType="com.ntels.avocado.domain.atom.config.processmanager.Svc">
+		UPDATE TAT_SVC SET SVC_NAME = #{svc_name},
+			DESCRIPTION = #{description}
+		WHERE SVC_NO = #{svc_no};
+	</update>
+	
+	<delete id="deleteSvc" parameterType="com.ntels.avocado.domain.atom.config.processmanager.Svc">
+		DELETE FROM TAT_SVC WHERE SVC_NO = #{svc_no};
+	</delete>
+	
+	<select id="listProcBase" resultType="com.ntels.avocado.domain.atom.config.processmanager.Proc">
+		SELECT BASE_NAME,
+			EXEC_BIN,
+			EXEC_ARG,
+			EXEC_ENV,
+			NORM_STOP_CD,
+			RESTA_CNT,
+			PROC_TYPE
+		FROM TAT_PROCESS_BASE
+	</select>
+	
+	<select id="listProc" parameterType="com.ntels.avocado.domain.atom.config.processmanager.Svc" resultType="com.ntels.avocado.domain.atom.config.processmanager.Proc">
+		SELECT
+			P.PROC_NO,
+			P.PKG_NAME,
+			P.PROC_NAME,
+			P.NODE_TYPE,
+			P.SVC_NO,
+			P.EXEC_BIN,
+			P.EXEC_ARG,
+			P.EXEC_ENV,
+			P.EXEC_YN,
+			P.START_ORDER,
+			P.STOP_ORDER,
+			P.CPU_BIND_CORE,
+			P.MMR_BIND_NODE,
+			P.USE_YN,
+			P.NORM_STOP_CD,
+			P.RESTA_CNT,
+			P.PROC_TYPE,
+			P.IMAGE_NO,
+			I.IMAGE_UUID,
+			I.IMAGE_X,
+			I.IMAGE_Y,
+			I.IMAGE_NAME,
+			I.IMAGE_BGCOLOR,
+			I.IMAGE_HEIGHT,
+			I.IMAGE_WIDTH
+		FROM TAT_PROCESS P
+		LEFT OUTER JOIN TAT_IMAGE I ON P.IMAGE_NO = I.IMAGE_NO
+		WHERE P.NODE_TYPE = #{node_type}
+	</select>
+	
+	<select id="listMonitoringProc" parameterType="com.ntels.avocado.domain.atom.config.processmanager.Svc" resultType="com.ntels.avocado.domain.atom.config.processmanager.Proc">
+		SELECT
+			P.PROC_NO,
+			P.PKG_NAME,
+			P.PROC_NAME,
+			P.NODE_TYPE,
+			P.SVC_NO,
+			P.EXEC_BIN,
+			P.EXEC_ARG,
+			P.EXEC_ENV,
+			P.EXEC_YN,
+			P.START_ORDER,
+			P.STOP_ORDER,
+			P.CPU_BIND_CORE,
+			P.MMR_BIND_NODE,
+			P.USE_YN,
+			P.NORM_STOP_CD,
+			P.RESTA_CNT,
+			P.PROC_TYPE,
+			P.IMAGE_NO,
+			I.IMAGE_UUID,
+			I.IMAGE_X,
+			I.IMAGE_Y,
+			I.IMAGE_NAME,
+			I.IMAGE_BGCOLOR,
+			I.IMAGE_HEIGHT,
+			I.IMAGE_WIDTH
+		FROM TAT_PROCESS P
+		LEFT OUTER JOIN TAT_IMAGE I ON P.IMAGE_NO = I.IMAGE_NO
+		WHERE P.NODE_TYPE = #{node_type}
+			AND P.USE_YN = 'Y'
+	</select>
+	
+	<select id="listLine" parameterType="com.ntels.avocado.domain.atom.config.processmanager.Svc" resultType="com.ntels.avocado.domain.atom.config.networkmanager.Line">
+		SELECT L.LINE_ID,
+			L.SOURCE_TYPE,
+			S.PROC_NO AS SOURCE_ID,
+			L.SOURCE_PORT,
+			L.TARGET_TYPE,
+			T.PROC_NO AS TARGET_ID,
+			L.TARGET_PORT,
+			L.ROUTER,
+			L.LINE_TYPE,
+			L.FULL_DUPLEX,
+			L.LINE_DESC,
+			Q.ELEM_CNT,
+			Q.BI_DIR_YN,
+			Q.MULTI_TYPE
+		FROM TAT_LINE_DEF L,
+			TAT_QUEUE_DEF Q,
+			TAT_PROCESS S,
+			TAT_PROCESS T
+		WHERE L.LINE_TYPE = <include refid="com.ntels.avocado.dao.common.CodeDefine.LINE_TYPE_PROCESS"/>
+			AND S.IMAGE_NO = L.SOURCE_ID
+			AND T.IMAGE_NO = L.TARGET_ID
+			AND S.PROC_NAME = Q.READ_PROC
+			AND T.PROC_NAME = Q.WRITE_PROC
+	</select>
+	
+	<delete id="deleteImages">
+		DELETE FROM TAT_IMAGE WHERE IMAGE_NO IN (SELECT IMAGE_NO FROM TAT_PROCESS WHERE SVC_NO = #{svc_no})
+	</delete>
+	
+	<update id="resetProcPosition" parameterType="com.ntels.avocado.domain.atom.config.processmanager.Svc">
+		UPDATE TAT_IMAGE SET
+			IMAGE_X = NULL,
+			IMAGE_Y = NULL
+		WHERE IMAGE_NO IN (SELECT IMAGE_NO FROM TAT_PROCESS WHERE SVC_NO = #{svc_no})
+	</update>
+	
+	<insert id="insertImage" parameterType="com.ntels.avocado.domain.atom.config.networkmanager.AtomImage">
+		<selectKey keyProperty="image_no" resultType="String" order="BEFORE">
+			SELECT IFNULL(MAX(IMAGE_NO), 0) + 1 AS IMAGE_NO FROM TAT_IMAGE
+		</selectKey>
+		INSERT INTO TAT_IMAGE (
+			IMAGE_NO,
+			IMAGE_UUID,
+			IMAGE_X,
+			IMAGE_Y,
+			IMAGE_NAME,
+			IMAGE_BGCOLOR,
+			IMAGE_HEIGHT,
+			IMAGE_WIDTH
+		) VALUES (
+			#{image_no},
+			#{image_uuid},
+			#{image_x},
+			#{image_y},
+			#{image_name},
+			#{image_bgcolor},
+			#{image_height},
+			#{image_width}
+		)
+	</insert>
+	
+	<update id="updateImage" parameterType="com.ntels.avocado.domain.atom.config.networkmanager.AtomImage">
+		UPDATE TAT_IMAGE SET
+			IMAGE_UUID = #{image_uuid},
+			IMAGE_X = #{image_x},
+			IMAGE_Y = #{image_y},
+			IMAGE_NAME = #{image_name},
+			IMAGE_BGCOLOR = #{image_bgcolor},
+			IMAGE_HEIGHT = #{image_height},
+			IMAGE_WIDTH = #{image_width}
+		WHERE IMAGE_NO = #{image_no}
+	</update>
+	
+	<delete id="deleteLine" parameterType="com.ntels.avocado.domain.atom.config.processmanager.Svc">
+		DELETE FROM TAT_LINE_DEF WHERE LINE_TYPE = <include refid="com.ntels.avocado.dao.common.CodeDefine.LINE_TYPE_PROCESS"/>
+			AND (
+				SOURCE_ID IN (SELECT IMAGE_NO FROM TAT_PROCESS WHERE SVC_NO = #{svc_no})
+				OR TARGET_ID IN (SELECT IMAGE_NO FROM TAT_PROCESS WHERE SVC_NO = #{svc_no})
+			)
+	</delete>
+	
+	<select id="getProc" resultType="com.ntels.avocado.domain.atom.config.processmanager.Proc" parameterType="com.ntels.avocado.domain.atom.config.processmanager.Proc">
+		SELECT PROC_NO,
+			PKG_NAME,
+			PROC_NAME,
+			NODE_TYPE,
+			SVC_NO,
+			EXEC_BIN,
+			EXEC_ARG,
+			EXEC_ENV,
+			EXEC_YN,
+			START_ORDER,
+			STOP_ORDER,
+			CPU_BIND_CORE,
+			MMR_BIND_NODE,
+			USE_YN,
+			NORM_STOP_CD,
+			RESTA_CNT,
+			PROC_TYPE,
+			IMAGE_NO
+		FROM TAT_PROCESS
+		WHERE PKG_NAME = #{pkg_name}
+			AND NODE_TYPE = #{node_type}
+			AND PROC_NAME = #{proc_name}
+			<if test="proc_no != null">
+				AND PROC_NO &lt;&gt; #{proc_no}
+			</if>
+	</select>
+	
+	<delete id="deleteSvcProc" parameterType="com.ntels.avocado.domain.atom.config.processmanager.Svc">
+		DELETE FROM TAT_PROCESS WHERE SVC_NO = #{svc_no}
+	</delete>
+	
+	<delete id="deleteQueue" parameterType="com.ntels.avocado.domain.atom.config.processmanager.Svc">
+		DELETE FROM TAT_QUEUE_DEF
+		WHERE
+			READ_PROC IN (
+				SELECT PROC_NAME FROM TAT_PROCESS WHERE SVC_NO = #{svc_no}
+			)
+			OR WRITE_PROC IN (
+				SELECT PROC_NAME FROM TAT_PROCESS WHERE SVC_NO = #{svc_no}
+			)
+	</delete>
+	
+	<insert id="insertQueue" parameterType="com.ntels.avocado.domain.atom.config.networkmanager.Line">
+		INSERT INTO TAT_QUEUE_DEF (
+			NODE_TYPE,
+			WRITE_PROC,
+			READ_PROC,
+			PKG_NAME,
+			ELEM_CNT,
+			BI_DIR_YN,
+			MULTI_TYPE,
+			LINE_ID
+		) VALUES (
+			#{node_type},
+			#{write_proc},
+			#{read_proc},
+			#{pkg_name},
+			#{elem_cnt},
+			#{bi_dir_yn},
+			#{multi_type},
+			#{line_id}
+		)
+	</insert>
+	
+	<insert id="insertLine" parameterType="com.ntels.avocado.domain.atom.config.networkmanager.Line">
+		<selectKey keyProperty="line_id" resultType="String" order="BEFORE">
+			SELECT IFNULL(MAX(LINE_ID), 0) + 1 AS LINE_ID FROM TAT_LINE_DEF
+		</selectKey>
+		INSERT INTO TAT_LINE_DEF (
+			LINE_ID,
+			SOURCE_TYPE,
+			SOURCE_ID,
+			SOURCE_PORT,
+			TARGET_TYPE,
+			TARGET_ID,
+			TARGET_PORT,
+			ROUTER,
+			LINE_TYPE,
+			FULL_DUPLEX,
+			LINE_DESC
+		) VALUES (
+			#{line_id},
+			#{source_type},
+			(SELECT IMAGE_NO FROM TAT_PROCESS WHERE PROC_NO = #{source_id}),
+			#{source_port},
+			#{target_type},
+			(SELECT IMAGE_NO FROM TAT_PROCESS WHERE PROC_NO = #{target_id}),
+			#{target_port},
+			#{router},
+			<include refid="com.ntels.avocado.dao.common.CodeDefine.LINE_TYPE_PROCESS"/>,
+			#{full_duplex},
+			#{line_desc}
+		)
+	</insert>
+	
+	<insert id="insertProc" parameterType="com.ntels.avocado.domain.atom.config.processmanager.Proc">
+		<selectKey keyProperty="proc_no" resultType="String" order="BEFORE">
+			SELECT IFNULL(MAX(PROC_NO), 0) + 1 AS PROC_NO FROM TAT_PROCESS
+		</selectKey>
+		INSERT INTO TAT_PROCESS (
+			PROC_NO,
+			PKG_NAME,
+			PROC_NAME,
+			NODE_TYPE,
+			SVC_NO,
+			EXEC_BIN,
+			EXEC_ARG,
+			EXEC_ENV,
+			EXEC_YN,
+			START_ORDER,
+			STOP_ORDER,
+			CPU_BIND_CORE,
+			MMR_BIND_NODE,
+			USE_YN,
+			NORM_STOP_CD,
+			RESTA_CNT,
+			PROC_TYPE,
+			IMAGE_NO
+		) VALUES(
+			#{proc_no},
+			#{pkg_name},
+			#{proc_name},
+			#{node_type},
+			#{svc_no},
+			#{exec_bin},
+			#{exec_arg},
+			#{exec_env},
+			#{exec_yn},
+			#{start_order},
+			#{stop_order},
+			#{cpu_bind_core},
+			#{mmr_bind_node},
+			#{use_yn},
+			#{norm_stop_cd},
+			#{resta_cnt},
+			#{proc_type},
+			#{image_no}
+		)
+	</insert>
+	
+	<update id="updateProc" parameterType="com.ntels.avocado.domain.atom.config.processmanager.Proc">
+		UPDATE TAT_PROCESS SET
+			<!-- PROC_NO = #{proc_no},
+			PKG_NAME = #{pkg_name}, -->
+			PROC_NAME = #{proc_name},
+			NODE_TYPE = #{node_type},
+			<!-- SVC_NO = #{svc_no},
+			EXEC_BIN = #{exec_bin},
+			EXEC_ARG = #{exec_arg},
+			EXEC_ENV = #{exec_env},
+			EXEC_YN = #{exec_yn}, -->
+			START_ORDER = #{start_order},
+			STOP_ORDER = #{stop_order},
+			<!-- CPU_BIND_CORE = #{cpu_bind_core},
+			MMR_BIND_NODE = #{mmr_bind_node}, -->
+			USE_YN = #{use_yn},
+			<!-- NORM_STOP_CD = #{norm_stop_cd},
+			RESTA_CNT = #{resta_cnt},
+			PROC_TYPE = #{proc_type}, -->
+			IMAGE_NO = #{image_no}
+		WHERE
+			PROC_NO = #{proc_no}
+	</update>
+	
+	<select id="getProcIdByUUID" parameterType="String" resultType="String">
+		SELECT P.PROC_NO FROM TAT_PROCESS P, TAT_IMAGE I
+		WHERE P.IMAGE_NO = I.IMAGE_NO
+			AND I.IMAGE_UUID = #{image_uuid}
+	</select>
+</mapper>

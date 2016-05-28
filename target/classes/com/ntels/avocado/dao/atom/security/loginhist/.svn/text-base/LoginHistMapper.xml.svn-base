@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ntels.avocado.dao.atom.security.loginhist.LoginHistMapper">
+	
+	<select id="listUserGroup" resultType="java.util.Map">
+		SELECT 'all' AS ID
+	         , 'ALL' AS NAME
+		UNION     
+		(SELECT GROUP_NO   AS ID
+		      , GROUP_NAME AS NAME
+		   FROM TAT_USER_GROUP
+		  WHERE 1=1
+		  ORDER BY GROUP_NO)
+	</select>
+	
+	<select id="listUserLevel" resultType="java.util.Map">
+		SELECT 'all' AS ID
+	         , 'ALL' AS NAME
+		UNION   
+		(SELECT LEVEL_ID    AS ID
+		      , LEVEL_TITLE AS NAME 
+		   FROM TAT_USER_LEVEL
+		  WHERE 1=1
+		    AND LEVEL_ID <![CDATA[>=]]> #{userLevelId}
+		  ORDER BY LEVEL_ID)
+	</select>
+	
+	<select id="count" resultType="int">
+		SELECT COUNT(*)
+		  FROM TAT_LOGIN_HIST A
+		     , TAT_USER B
+		     , TAT_USER_GROUP C
+		     , TAT_USER_LEVEL D
+		 WHERE 1=1
+		   AND A.USER_ID = B.USER_ID
+		   AND B.GROUP_NO = C.GROUP_NO
+		   AND B.LEVEL_ID = D.LEVEL_ID
+		   AND B.LEVEL_ID <![CDATA[>=]]> #{condition.userLevelId}
+		   AND DATE_FORMAT(A.LOGIN_DATE,'%Y%m%d%H%i') <![CDATA[>=]]> CONCAT(#{condition.startDate}, #{condition.startTime})
+		   AND DATE_FORMAT(A.LOGIN_DATE,'%Y%m%d%H%i') <![CDATA[<]]> CONCAT(#{condition.endDate}, #{condition.endTime})
+		   <if test="condition.groupNo != 'all' and condition.groupNo != '' and condition.groupNo != null">
+		   AND C.GROUP_NO = #{condition.groupNo}
+		   </if>
+		   <if test="condition.levelId != 'all' and condition.levelId != '' and condition.levelId != null" >
+		   AND D.LEVEL_ID = #{condition.levelId}
+		   </if>
+		   <if test="condition.userId != '' and condition.userId != null">
+		   AND A.USER_ID LIKE CONCAT('%', #{condition.userId , jdbcType=CHAR}, '%')
+		   </if>
+		   <if test="condition.userName != '' and condition.userName != null">
+		   AND B.USER_NAME LIKE CONCAT('%', #{condition.userName , jdbcType=CHAR}, '%')
+		   </if>
+	</select>
+
+	<select id="list" resultType="com.ntels.avocado.domain.atom.security.loginhist.LoginHistDomain">
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_header" />
+			SELECT A.USER_ID
+			     , C.GROUP_NO
+			     , C.GROUP_NAME
+			     , D.LEVEL_ID
+			     , D.LEVEL_TITLE
+			     , B.USER_NAME
+			     , A.DESCRIPTION
+			     , (SELECT CODE_NAME
+			          FROM TAT_COMMON_CODE
+			         WHERE 1=1
+			           AND A.LOGIN_CLIENT_TYPE = DETAIL_CD
+			           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.PFNM_HISTORY_LOGIN_CONSTANTS_CLIENT_TYPE"/>) AS LOGIN_CLIENT_TYPE
+			     , A.LOGIN_IP
+			     , (SELECT CODE_NAME 
+			          FROM TAT_COMMON_CODE 
+			         WHERE 1=1
+			           AND A.LOGIN_RESULT = DETAIL_CD
+			           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.PFNM_HISTORY_LOGIN_CONSTANTS_LOGIN_STATUS"/>) AS LOGIN_RESULT 
+			     , CONCAT(DATE_FORMAT(A.LOGIN_DATE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language})) ,' ',DATE_FORMAT(A.LOGIN_DATE, '%H:%i:%s')) AS LOGIN_DATE
+			     , (SELECT CODE_NAME 
+			          FROM TAT_COMMON_CODE 
+			         WHERE 1=1
+			           AND A.LOGOUT_RESULT = DETAIL_CD
+			           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.PFNM_HISTORY_LOGIN_CONSTANTS_LOGOUT_STATUS"/>) AS LOGOUT_RESULT
+			     , CONCAT(DATE_FORMAT(A.LOGOUT_DATE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language})) ,' ',DATE_FORMAT(A.LOGOUT_DATE, '%H:%i:%s')) AS LOGOUT_DATE
+			  FROM TAT_LOGIN_HIST A
+			     , TAT_USER B
+			     , TAT_USER_GROUP C
+			     , TAT_USER_LEVEL D
+			 WHERE 1=1
+			   AND A.USER_ID = B.USER_ID
+			   AND B.GROUP_NO = C.GROUP_NO
+			   AND B.LEVEL_ID = D.LEVEL_ID
+			   AND B.LEVEL_ID <![CDATA[>=]]> #{condition.userLevelId}
+			   AND DATE_FORMAT(A.LOGIN_DATE,'%Y%m%d%H%i') <![CDATA[>=]]> CONCAT(#{condition.startDate}, #{condition.startTime})
+			   AND DATE_FORMAT(A.LOGIN_DATE,'%Y%m%d%H%i') <![CDATA[<]]> CONCAT(#{condition.endDate}, #{condition.endTime})
+			   <if test="condition.groupNo != 'all' and condition.groupNo != '' and condition.groupNo != null">
+			   AND C.GROUP_NO = #{condition.groupNo}
+			   </if>
+			   <if test="condition.levelId != 'all' and condition.levelId != '' and condition.levelId != null" >
+			   AND D.LEVEL_ID = #{condition.levelId}
+			   </if>
+			   <if test="condition.userId != '' and condition.userId != null">
+			   AND A.USER_ID LIKE CONCAT('%', #{condition.userId , jdbcType=CHAR}, '%')
+			   </if>
+			   <if test="condition.userName != '' and condition.userName != null">
+			   AND B.USER_NAME LIKE CONCAT('%', #{condition.userName , jdbcType=CHAR}, '%')
+			   </if>
+			 <if test="condition.orderBy != '' and condition.orderBy != null">
+			 ORDER BY ${condition.orderBy}, LOGIN_DATE DESC
+			 </if>
+			 <if test="condition.orderBy == '' or condition.orderBy == null">
+			 ORDER BY GROUP_NAME DESC, LEVEL_TITLE DESC, USER_NAME DESC, LOGIN_DATE DESC
+			 </if>
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_footer" />
+	</select>
+	
+	<select id="listExcel" resultType="java.util.LinkedHashMap">
+		SELECT A.USER_ID AS 'User ID'
+		     , C.GROUP_NAME AS 'User Group'
+		     , D.LEVEL_TITLE AS 'User Level'
+		     , B.USER_NAME AS 'User Name'
+		     , A.DESCRIPTION AS 'Remark'
+		     , IFNULL((SELECT CODE_NAME
+		          FROM TAT_COMMON_CODE
+		         WHERE 1=1
+		           AND A.LOGIN_CLIENT_TYPE = DETAIL_CD
+		           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.PFNM_HISTORY_LOGIN_CONSTANTS_CLIENT_TYPE"/>),'') AS 'Client Type'
+		     , A.LOGIN_IP AS 'IP'
+		     , IFNULL((SELECT CODE_NAME 
+		          FROM TAT_COMMON_CODE 
+		         WHERE 1=1
+		           AND A.LOGIN_RESULT = DETAIL_CD
+		           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.PFNM_HISTORY_LOGIN_CONSTANTS_LOGIN_STATUS"/>),'') AS 'Login Status' 
+		     ,IFNULL((SELECT CODE_NAME 
+		          FROM TAT_COMMON_CODE 
+		         WHERE 1=1
+		           AND A.LOGOUT_RESULT = DETAIL_CD
+		           AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.PFNM_HISTORY_LOGIN_CONSTANTS_LOGOUT_STATUS"/>),'') AS 'Logout Status'
+		     , IFNULL(CONCAT(DATE_FORMAT(A.LOGIN_DATE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language})) ,' ',DATE_FORMAT(A.LOGIN_DATE, '%H:%i:%s')),'') AS 'Login Time'
+		     , IFNULL(CONCAT(DATE_FORMAT(A.LOGOUT_DATE, (SELECT DB_PATTERN_DATE FROM TAT_DATE_PATTERN WHERE LOCALE = #{condition.language})) ,' ',DATE_FORMAT(A.LOGOUT_DATE, '%H:%i:%s')),'') AS 'Logout Time'
+		  FROM TAT_LOGIN_HIST A
+		     , TAT_USER B
+		     , TAT_USER_GROUP C
+		     , TAT_USER_LEVEL D
+		 WHERE 1=1
+		   AND A.USER_ID = B.USER_ID
+		   AND B.GROUP_NO = C.GROUP_NO
+		   AND B.LEVEL_ID = D.LEVEL_ID
+		   AND B.LEVEL_ID <![CDATA[>=]]> #{condition.userLevelId}
+		   AND DATE_FORMAT(A.LOGIN_DATE,'%Y%m%d%H%i') <![CDATA[>=]]> CONCAT(#{condition.startDate}, #{condition.startTime})
+		   AND DATE_FORMAT(A.LOGIN_DATE,'%Y%m%d%H%i') <![CDATA[<]]> CONCAT(#{condition.endDate}, #{condition.endTime})
+		   <if test="condition.groupNo != 'all' and condition.groupNo != '' and condition.groupNo != null">
+		   AND C.GROUP_NO = #{condition.groupNo}
+		   </if>
+		   <if test="condition.levelId != 'all' and condition.levelId != '' and condition.levelId != null" >
+		   AND D.LEVEL_ID = #{condition.levelId}
+		   </if>
+		   <if test="condition.userId != '' and condition.userId != null">
+		   AND A.USER_ID LIKE CONCAT('%', #{condition.userId , jdbcType=CHAR}, '%')
+		   </if>
+		   <if test="condition.userName != '' and condition.userName != null">
+		   AND B.USER_NAME LIKE CONCAT('%', #{condition.userName , jdbcType=CHAR}, '%')
+		   </if>
+		 <if test="condition.orderBy != '' and condition.orderBy != null">
+		 ORDER BY ${condition.orderBy}, LOGIN_DATE DESC
+		 </if>
+		 <if test="condition.orderBy == '' or condition.orderBy == null">
+		 ORDER BY GROUP_NAME DESC, LEVEL_TITLE DESC, USER_NAME DESC, LOGIN_DATE DESC
+		 </if>
+	</select>
+	
+</mapper>

@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ntels.avocado.dao.atom.history.login.LoginHistoryMapper">
+
+    <!--
+        * 사용자그룹 콤보 조회
+         -->
+    <select id="listUserGroup" parameterType="String" resultType="java.util.HashMap">
+        SELECT USER_GROUP_ID AS ID
+             , USER_GROUP_NAME AS NAME
+           FROM T_NFW_USER_GROUP
+          WHERE LEVEL_ID <![CDATA[>=]]> #{user_group_level}
+        ORDER BY USER_GROUP_ID
+    </select>
+
+    <!--
+        * 사용자 콤보 조회
+         -->
+    <select id="listUser" resultType="java.util.HashMap">
+        SELECT USER_ID AS ID
+             , USER_NAME AS NAME
+            FROM T_NFW_USER A
+               , T_NFW_USER_GROUP B
+           WHERE A.USER_GROUP_ID = B.USER_GROUP_ID
+           <if test="user_group_level != null and user_group_level != 'all'">
+             AND B.LEVEL_ID <![CDATA[>=]]> #{user_group_level}
+           </if>
+           <if test="user_group_id != null and user_group_id != 'all'">
+             AND A.USER_GROUP_ID = #{user_group_id}
+           </if>
+            AND A.USER_FLAG = 'Y'
+          ORDER BY A.USER_ID
+    </select>
+
+    <select id="list"
+            parameterType="com.ntels.avocado.domain.atom.history.login.Condition"
+            resultType="com.ntels.avocado.domain.atom.history.login.LoginHistory">
+        <include refid="com.ntels.avocado.dao.common.CommonMapper.paging_header"/>
+        SELECT
+            (SELECT user_group_name FROM T_NFW_USER_GROUP WHERE user_group_id = b.user_group_id) user_group_name,
+            b.user_id,
+            b.user_name,
+            <!-- a.seq, -->
+            a.prc_date,
+            a.prc_time,
+            a.login_gateway_ip
+        FROM
+            T_NFW_LOGIN_HIST a, T_NFW_USER b
+        <include refid="sql_condition"/>
+        ORDER BY
+            a.prc_date DESC, a.prc_time DESC
+        <include refid="com.ntels.avocado.dao.common.CommonMapper.paging_footer"/>
+     </select>
+
+    <select id="count"
+            parameterType="com.ntels.avocado.domain.atom.history.login.Condition"
+            resultType="int">
+        SELECT
+            count(0)
+        FROM
+            T_NFW_LOGIN_HIST a, T_NFW_USER b
+        <include refid="sql_condition"/>
+     </select>
+
+    <insert id="insert" parameterType="com.ntels.avocado.domain.atom.history.login.LoginHistory">
+        INSERT INTO T_NFW_LOGIN_HIST(
+             user_id
+            ,prc_date
+            ,prc_time
+            <!-- ,login_status -->
+            ,login_gateway_ip
+            <!-- ,client_type -->
+        )VALUES(
+             #{user_id}
+            ,#{login_date}
+            ,#{login_time}
+            <!-- ,#{login_status}  -->    
+            ,#{login_gateway_ip}
+            <!-- ,#{client_type} -->
+        )
+    </insert>
+    
+    <update id="updateLoginHistory" parameterType="com.ntels.avocado.domain.atom.history.login.LoginHistory">
+		UPDATE TAT_LOGIN_HIST SET
+		    REMARK = #{loginHistory.remark}
+           <if test="loginHistory.login_time != null and loginHistory.login_time!= ''">
+           ,prc_time = #{loginHistory.login_time}
+           </if>   
+           <if test="loginHistory.login_gateway_ip != null and loginHistory.login_gateway_ip != ''">
+           ,LOGIN_GATEWAY_IP = #{loginHistory.login_gateway_ip}
+           </if>  
+           <if test="loginHistory.logout_date != null and loginHistory.logout_date != ''">
+           ,LOGOUT_DATE = #{loginHistory.logout_date}
+           </if>  
+           <if test="loginHistory.logout_time != null and loginHistory.logout_time != ''">
+           ,LOGOUT_TIME = #{loginHistory.logout_time}
+           </if>  
+           <if test="loginHistory.logout_status != null and loginHistory.logout_status != ''">
+           ,LOGOUT_STATUS = #{loginHistory.logout_status}
+           </if>                                              		    
+		 WHERE USER_ID = #{loginHistory.user_id}
+		   AND prc_date = #{loginHistory.login_date}
+          <!-- <if test="loginHistory.seq != null and loginHistory.seq != ''">
+            AND SEQ = #{loginHistory.seq} 
+           </if>   -->
+           <if test="loginHistory.login_time != null and loginHistory.login_time != ''">
+           AND prc_time = #{loginHistory.login_time} 
+           </if>             		             
+    </update>      
+
+    <select id="listExcel"
+            parameterType="com.ntels.avocado.domain.atom.history.login.Condition"
+            resultType="org.apache.commons.collections.map.CaseInsensitiveMap">
+        SELECT
+            (SELECT user_group_name FROM T_NFW_USER_GROUP WHERE user_group_id = b.user_group_id) AS '사용자 그룹',
+            CONCAT(b.user_id, ' / ', b.user_name) AS '사용자',
+            DATE_FORMAT(CONCAT(a.prc_date, a.prc_time), '%Y-%m-%d %H:%i:%s')  AS '로그인 일시',
+            a.login_gateway_ip AS 'IP'
+        FROM
+            T_NFW_LOGIN_HIST a, T_NFW_USER b
+        <include refid="sql_condition"/>
+        ORDER BY
+            a.prc_date DESC, a.prc_time DESC
+     </select>
+
+    <sql id="sql_condition">
+        WHERE
+                a.user_id = b.user_id
+            <if test="condition.user_group_id != null and condition.user_group_id != 'all'">
+            AND b.user_group_id = #{condition.user_group_id}
+            </if>
+            <if test="condition.user_id != null and condition.user_id != 'all'">
+            AND a.user_id = #{condition.user_id}
+            </if>
+            AND a.prc_date between #{condition.startDate} and #{condition.endDate}
+    </sql>
+
+</mapper>

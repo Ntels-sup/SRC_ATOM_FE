@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+	<comment>common configuration</comment>
+	
+	<!-- <entry key="jdbc.driverClass.master">org.mariadb.jdbc.Driver</entry>
+	<entry key="jdbc.url.master">jdbc:mariadb://61.40.220.43:3306/CGW</entry>
+	<entry key="jdbc.username.master">cgw</entry>
+	<entry key="jdbc.password.master">cgw</entry> -->
+	
+	<!-- <entry key="jdbc.driverClass.master">oracle.jdbc.driver.OracleDriver</entry>
+	<entry key="jdbc.url.master">jdbc:oracle:thin:@61.40.220.35:1521:orcl</entry>
+	<entry key="jdbc.username.master">OFCS</entry>
+	<entry key="jdbc.password.master">OFCS</entry> -->
+	
+	<!-- db정보 -->
+	<entry key="jdbc.driverClass.master">com.mysql.jdbc.Driver</entry>
+	<entry key="jdbc.url.master">jdbc:mysql://61.40.220.43:3306/ATOM</entry>
+	<entry key="jdbc.username.master">atom</entry>
+	<entry key="jdbc.password.master">atom</entry>
+	
+<!-- 	<entry key="jdbc.driverClass.slave">com.mysql.jdbc.Driver</entry> -->
+<!-- 	<entry key="jdbc.url.slave">jdbc:mysql://61.40.220.43:3306/ATOM_TEMP</entry> -->
+<!-- 	<entry key="jdbc.username.slave">atom</entry> -->
+<!-- 	<entry key="jdbc.password.slave">atom</entry> -->
+	
+	<!-- 웹소켓 정보 -->
+	<entry key="websocket.connect.url">ws://61.40.220.43:8282/</entry>
+	<!-- <entry key="websocket.connect.url">ws://127.0.0.1:8686/</entry> -->
+	
+    <!-- VOFCS -->
+	<entry key="jdbc.driverClass.vofcs">com.mysql.jdbc.Driver</entry>
+	<entry key="jdbc.url.vofcs">jdbc:mysql://61.40.220.43:3306/VOFCS</entry>
+	<entry key="jdbc.username.vofcs">cgw</entry>
+	<entry key="jdbc.password.vofcs">cgw</entry>
+	
+	<!-- OFCS -->
+	<entry key="jdbc.driverClass.ofcs">com.mysql.jdbc.Driver</entry>
+	<entry key="jdbc.url.ofcs">jdbc:mysql://61.40.220.43:3306/OFCS</entry>
+	<entry key="jdbc.username.ofcs">cgw</entry>
+	<entry key="jdbc.password.ofcs">cgw</entry>
+	
+</properties>

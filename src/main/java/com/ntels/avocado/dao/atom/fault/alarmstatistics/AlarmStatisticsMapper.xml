@@ -1,0 +1,271 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ntels.avocado.dao.atom.fault.alarmstatistics.AlarmStatisticsMapper">
+    <!-- * 리스트 조회 -->
+    <select id="list" databaseId="mysql"
+                      resultType="com.ntels.avocado.domain.atom.fault.alarmstatistics.AlarmStatistics">
+            <include refid="com.ntels.avocado.dao.common.CommonMapper.paging_header" />	        
+			<include refid="listClause"/>
+				<if test="condition.orderBy != '' and condition.orderBy != null">
+				ORDER BY ${condition.orderBy}
+				</if>
+				<if test="condition.orderBy == '' or condition.orderBy == null">
+				ORDER BY PRC_DATE , NODE_NO ASC
+				</if>
+			<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_footer" />
+    </select>
+
+    <!-- * 리스트 Count -->
+    <select id="count" databaseId="mysql"  
+                       resultType="java.util.HashMap">
+        SELECT
+               COUNT(*) AS TOTAL_COUNT 
+        	 , SUM(ALARM_CNT) AS ALARM_CNT
+        FROM 
+        (
+			<include refid="listClause"/>
+        ) Z
+    </select>
+
+<!-- top10 시스템 조회 -->
+
+    <select id="topSystemArray" databaseId="mysql"
+                              resultType="String">
+		SELECT GROUP_CONCAT(NODE_NO)
+		FROM(
+				SELECT  NODE_NO
+				      , NODE_NAME 
+				      , SUM(ALARM_CNT) ALARM_CNT                             
+				
+				   FROM
+				( 
+				    <include refid="listClause"/>                             
+				 ) Z
+				                     GROUP BY NODE_NO 
+				                     ORDER BY ALARM_CNT DESC , NODE_NAME ASC
+				                     LIMIT 10                             
+			   )A    
+    </select>
+    
+    
+    
+    
+   <select id="topSystemList" databaseId="mysql"
+                              resultType="java.util.LinkedHashMap">
+		SELECT NODE_NAME FROM TAT_NODE 
+		            WHERE 1=1
+					AND NODE_NO IN
+						<foreach   collection="condition.systemArray" item ="systemArray" index="index"   open="(" separator="," close=")" >
+						 #{systemArray, jdbcType=INTEGER}
+						</foreach>
+    </select>
+   
+   
+   <!-- * Chart 조회 -->
+    <select id="getChartList" databaseId="mysql"
+                              resultType="java.util.HashMap">
+		SELECT PRC_DATE
+		     , GROUP_CONCAT(NODE_NAME,'~',ALARM_CNT) AS SYSTM_BY_CNT
+        FROM 
+        (
+			<include refid="listClause"/>
+		) Z
+		GROUP BY PRC_DATE
+    </select>
+
+
+    <sql id="listClause">
+		SELECT
+		      <if test="condition.typeId == 1 || condition.typeId == 5 || condition.typeId == 6 ">
+		       DATE_FORMAT(PRC_DATE,CONCAT(#{condition.locale},' %H:%i' )) AS PRC_DATE 
+		     </if>
+		     <if test="condition.typeId == 2">
+		       DATE_FORMAT(PRC_DATE,CONCAT(#{condition.locale},' %H' )) AS PRC_DATE 
+		     </if>
+		     <if test="condition.typeId == 3">
+		       DATE_FORMAT(PRC_DATE, #{condition.locale} ) AS PRC_DATE 
+		     </if>
+		     <if test="condition.typeId == 4">
+		       DATE_FORMAT(CONCAT(PRC_DATE,'-01'), #{condition.locale}) AS PRC_DATE 
+		     </if>
+			<if test="condition.system_id != 'all'">
+				, NODE_NO
+				, (SELECT NODE_NAME FROM TAT_NODE WHERE NODE_NO = RE.NODE_NO ) AS NODE_NAME
+			    , (SELECT PKG_NAME FROM TAT_NODE WHERE NODE_NO = RE.NODE_NO) AS PKG_NAME
+			</if>
+			<if test="condition.system_id == 'all'">
+				, 'ALL' AS NODE_NO
+				, 'ALL' AS NODE_NAME
+			    , 'ALL' AS PKG_NAME
+			</if>
+			<!-- severity ALL 선택 -->
+			<if test="condition.severity == null or condition.severity == '' or condition.severity == 'all'">
+			    , 'All' AS SEVERITY_NM
+			    , 'ALL' AS SEVERITY
+			    , SUM(ALL_CNT) AS ALARM_CNT
+			
+			</if>
+	        <!-- severity 하나 선택 -->
+	        <if test="condition.severity != null and condition.severity != '' and condition.severity != 'all'">
+			    , (SELECT CODE_NAME 
+			         FROM TAT_COMMON_CODE 
+			        WHERE DETAIL_CD = #{condition.severity} 
+			          AND GROUP_CD = <include refid="com.ntels.avocado.dao.common.CodeDefine.COMMON_ALARM_SEVERITY_CODE"/>
+			       ) AS SEVERITY_NM
+			       ,#{condition.severity}  AS SEVERITY
+			     <if test='condition.severity == "0"'>
+	             	, SUM(INDETERMINATE) AS ALARM_CNT
+	             </if>
+	             <if test='condition.severity == "1"'>
+	             	, SUM(CRITICAL) AS ALARM_CNT
+	             </if>
+	             <if test='condition.severity == "2"'>
+	             	, SUM(MAJOR) AS ALARM_CNT
+	             </if>
+	             <if test='condition.severity == "3"'>
+	             	, SUM(MINOR) AS ALARM_CNT
+	             </if>
+	             <if test='condition.severity == "4"'>
+	             	, SUM(WARNING) AS ALARM_CNT
+	             </if>
+	             <if test='condition.severity == "5"'>
+	             	, SUM(CLEARED) AS ALARM_CNT
+	             </if>
+	             <if test='condition.severity == "6"'>
+	             	, SUM(FAULT) AS ALARM_CNT
+	             </if>
+	             <if test='condition.severity == "7"'>
+	             	, SUM(NOTICE) AS ALARM_CNT
+	             </if>
+			</if>
+    	FROM
+    	(	SELECT   PRC_DATE
+			        ,NODE_NO         
+			        ,INDETERMINATE
+			        ,CRITICAL
+			        ,MAJOR
+			        ,MINOR
+			        ,WARNING
+			        ,CLEARED
+			        ,FAULT
+			        ,NOTICE
+			        ,ALL_CNT
+			 FROM( SELECT  (<include refid="com.ntels.avocado.dao.common.CommonCodeMapper.typeIdCondition"/>) AS PRC_DATE
+							, NODE_NO 
+				            , SUM(INDETERMINATE) AS INDETERMINATE  
+				            , SUM(CRITICAL)      AS CRITICAL
+				            , SUM(MAJOR)         AS MAJOR 
+				            , SUM(MINOR)         AS MINOR  
+				            , SUM(WARNING)       AS WARNING   
+				            , SUM(CLEARED)       AS CLEARED
+				            , SUM(FAULT)         AS FAULT
+				            , SUM(NOTICE)        AS NOTICE  
+				            ,(SUM(INDETERMINATE)+SUM(CRITICAL)+SUM(MAJOR)+SUM(MINOR)+SUM(WARNING)+SUM(CLEARED)+SUM(FAULT)+SUM(NOTICE)) AS ALL_CNT
+             		  FROM TAT_STS_ALM A
+		    		 WHERE 1 = 1
+			        <if test="condition.system_id != 'all'">
+			             AND NODE_NO IN
+						<foreach   collection="condition.systemArray" item ="systemArray" index="index"   open="(" separator="," close=")" >
+							 #{systemArray, jdbcType=INTEGER}
+						</foreach>
+		            </if>
+			         
+			         <include refid="whereClause"/>
+			         GROUP BY PRC_DATE, NODE_NO
+		         ) AA WHERE AA.PRC_DATE IS NOT NULL
+		    GROUP BY PRC_DATE , NODE_NO
+		    
+		    UNION
+		    SELECT  PRC_DATE
+			       <if test="condition.system_id == 'all'">
+			       ,'ALL' AS NODE_NO
+			       </if>
+			       <if test="condition.system_id != 'all'">
+			       ,NODE_NO
+			       </if>
+			       ,0 AS INDETERMINATE
+			       ,0 AS CRITICAL
+			       ,0 AS MAJOR
+			       ,0 AS MINOR
+			       ,0 AS WARNING
+			       ,0 AS CLEARED
+			       ,0 AS FAULT
+			       ,0 AS NOTICE
+			       ,0 AS ALL_CNT
+		    FROM (<include refid="com.ntels.avocado.dao.common.CommonCodeMapper.datetimeFromClause"/>) A 
+		        <if test="condition.system_id != 'all'">
+		        ,( SELECT NODE_NO FROM  
+					<foreach   collection="condition.systemArray" item ="systemArray" index="indexNO"   open="(" separator="UNION" close=") NODE" >
+					  SELECT #{systemArray, jdbcType=INTEGER}  AS NODE_NO
+					</foreach>
+					)B
+				</if>
+		) RE
+		
+		GROUP BY PRC_DATE 
+		       <if test="condition.system_id != 'all'">
+		       , NODE_NO
+ 			   </if>
+   
+    </sql>
+
+    
+    <sql id="whereClause">
+
+		<choose>
+			<when test="condition.typeId != null and condition.typeId != '' and condition.typeId != 'all'">
+				<if test="condition.typeId == 1 || condition.typeId == 5 || condition.typeId == 6 "> <!-- 5, 10, 30 cycle -->
+					AND DATE_FORMAT(A.PRC_DATE,'%Y%m%d%H%i') <![CDATA[>=]]> CONCAT(#{condition.startDate}, #{condition.startTime})
+		            AND DATE_FORMAT(A.PRC_DATE,'%Y%m%d%H%i') <![CDATA[<]]> CONCAT(#{condition.endDate}, #{condition.endTime})
+		        </if>
+		        <if test="condition.typeId == 2"> <!-- 시간별 -->
+		        	AND DATE_FORMAT(A.PRC_DATE,'%Y%m%d%H') <![CDATA[>=]]> SUBSTR(CONCAT(#{condition.startDate},#{condition.startTime}), 1, 10)
+		            AND DATE_FORMAT(A.PRC_DATE,'%Y%m%d%H') <![CDATA[<]]>  SUBSTR(CONCAT(#{condition.endDate},#{condition.endTime}), 1, 10)
+		        </if>
+		        <if test="condition.typeId == 3"><!--  일별 -->
+		        	AND DATE_FORMAT(A.PRC_DATE,'%Y%m%d') <![CDATA[>=]]> #{condition.startDate}
+		            AND DATE_FORMAT(A.PRC_DATE,'%Y%m%d') <![CDATA[<=]]> #{condition.endDate}
+		        </if>
+		        <if test="condition.typeId == 4"> <!-- 월별 -->
+		        	AND DATE_FORMAT(A.PRC_DATE,'%Y%m') <![CDATA[>=]]> SUBSTR(#{condition.startDate}, 1, 6)
+		            AND DATE_FORMAT(A.PRC_DATE,'%Y%m') <![CDATA[<=]]> SUBSTR(#{condition.endDate}, 1, 6)
+		        </if>
+		    </when>
+		    <otherwise><!-- 전체 -->
+					AND DATE_FORMAT(A.PRC_DATE,'%Y%m%d%H%i') <![CDATA[>=]]> CONCAT(#{condition.startDate}, #{condition.startTime})
+		            AND DATE_FORMAT(A.PRC_DATE,'%Y%m%d%H%i') <![CDATA[<]]> CONCAT(#{condition.endDate}, #{condition.endTime})
+		    </otherwise>
+		</choose>
+    </sql>
+    
+  
+
+  
+    
+        <!-- * 엑셀 조회 -->
+    <select id="listExcel"    resultType="java.util.LinkedHashMap">
+			SELECT PRC_DATE    AS  "DATE"
+			      ,PKG_NAME    AS  "PACKAGE"
+			      ,NODE_NAME   AS  "SYSTEM"
+			      ,SEVERITY_NM AS  "SEVERITY"
+			      ,ALARM_CNT   AS  "ALARM COUNT"
+			FROM(
+			<include refid="listClause"/>
+				<if test="condition.orderBy != '' and condition.orderBy != null">
+				ORDER BY ${condition.orderBy}
+				</if>
+				<if test="condition.orderBy == '' or condition.orderBy == null">
+				ORDER BY PRC_DATE , NODE_NO ASC
+				</if>
+                )EXCEL
+    </select>
+    
+    
+
+    
+    
+    
+</mapper>

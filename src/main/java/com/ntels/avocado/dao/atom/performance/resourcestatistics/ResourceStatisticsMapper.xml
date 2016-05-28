@@ -1,0 +1,377 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+ 
+ <mapper namespace="com.ntels.avocado.dao.atom.performance.resourcestatistics.ResourceStatisticsMapper">
+ <!-- * 리스트 조회 -->
+     <select id="list" databaseId="mysql"
+                      resultType="java.util.LinkedHashMap">
+	 SELECT  <if test="condition.typeId == 1 || condition.typeId == 5 || condition.typeId == 6 ">
+		       DATE_FORMAT(PRC_DATE,CONCAT(#{condition.locale},' %H:%i' )) AS Date 
+		     </if>
+		     <if test="condition.typeId == 2">
+		       DATE_FORMAT(PRC_DATE,CONCAT(#{condition.locale},' %H' )) AS Date 
+		     </if>
+		     <if test="condition.typeId == 3">
+		       DATE_FORMAT(PRC_DATE, #{condition.locale} ) AS Date 
+		     </if>
+		     <if test="condition.typeId == 4">
+		       DATE_FORMAT(CONCAT(PRC_DATE,'-01'), #{condition.locale}) AS Date 
+		     </if>
+	   	      ,PKG_NAME      AS 'Package'
+	   	      ,NODE_NAME     AS 'System' 
+	          ,RSC_GRP_NAME  AS 'Resource Name' 
+		      ,RSC_NAME      AS 'Resource ID'
+		<choose>
+			<when test="condition.rsc_grp_id == 'RSC_GRP_03' ">
+				<foreach   collection="condition.rscIdList" item ="IdCaseListA" index="indexR"   open="" separator=" " close="" >
+			      ,CONCAT(TRUNCATE(RscList.${IdCaseListA.CODE_NAME},1) , 'ºC')  AS #{IdCaseListA.CODE_NAME}
+			    </foreach>
+			</when>
+		    <otherwise>
+			    <foreach   collection="condition.rscIdList" item ="IdCaseListA" index="indexR"   open="" separator=" " close="" >
+			      ,CONCAT(TRUNCATE(RscList.${IdCaseListA.CODE_NAME},2) , '%')  AS #{IdCaseListA.CODE_NAME}
+			    </foreach>
+		    </otherwise>
+		</choose>
+	    FROM
+        (
+          <include refid="com.ntels.avocado.dao.common.CommonMapper.paging_header" />
+		  	<include refid="listClause"/>
+				<if test="condition.orderBy != '' and condition.orderBy != null">
+					ORDER BY ${condition.orderBy}
+				</if>
+				<if test="condition.orderBy == '' or condition.orderBy == null">
+					ORDER BY PRC_DATE
+				</if>
+		<include refid="com.ntels.avocado.dao.common.CommonMapper.paging_footer" />
+        ) RscList
+ 
+ 
+    </select>
+ 
+ 
+     <!-- * 리스트 Count -->
+    <select id="count" databaseId="mysql"  
+                       resultType="java.util.HashMap">
+        SELECT
+               COUNT(*) AS TOTAL_COUNT
+        FROM ( <include refid="listClause"/> ) Z
+    </select>
+ 
+    <select id="listRscIdCase" databaseId="mysql"  
+                       resultType="java.util.LinkedHashMap">
+                SELECT DETAIL_CD
+				      ,CODE_NAME
+				FROM TAT_COMMON_CODE
+				WHERE 1=1
+				AND GROUP_CD = ( SELECT RSC_GRP_CCD
+				                    FROM
+				                    TAT_RSC_GRP_DEF
+				                    WHERE 1=1 
+				                    AND RSC_GRP_ID = #{condition.rsc_grp_id}
+				                    )
+    </select>             
+ 
+ 
+ 
+    <!-- Usage  top10 시스템 조회  -->
+    
+     <select id="topSystemArray" databaseId="mysql"
+                              resultType="String">
+		SELECT GROUP_CONCAT(NODE_NO)
+		FROM(
+		SELECT  NODE_NO
+		      , NODE_NAME 
+		<choose>
+			<when test="condition.rsc_grp_id == 'RSC_GRP_03' ">
+			      , TRUNCATE(RscList.Temp,2)  AS "Usage"
+			</when>
+		    <otherwise>
+			      , TRUNCATE(RscList.Usage,2)  AS "Usage"
+		    </otherwise>
+		</choose>
+	     FROM
+		( 
+		    <include refid="listClause"/>                              
+		 ) RscList
+		                     GROUP BY NODE_NO 
+		                  	<choose>
+								<when test="condition.rsc_grp_id == 'RSC_GRP_03' ">
+								      ORDER BY RscList.Temp DESC
+								</when>
+							    <otherwise>
+								     ORDER BY RscList.Usage DESC
+							    </otherwise>
+							</choose>
+		                     LIMIT 10                       
+          )SYS
+    </select>
+    
+    
+    <select id="topSystemList" databaseId="mysql"
+                              resultType="java.util.LinkedHashMap">
+<!-- 		SELECT NODE_NAME FROM TAT_NODE 
+		            WHERE 1=1
+					AND NODE_NO IN
+						<foreach   collection="condition.systemArray" item ="systemArray" index="index"   open="(" separator="," close=")" >
+						 #{systemArray, jdbcType=INTEGER}
+						</foreach> -->
+    
+      SELECT  NODE_NAME 
+		<choose>
+			<when test="condition.rsc_grp_id == 'RSC_GRP_03' ">
+			      , TRUNCATE(RscList.Temp,2)  AS "Usage"
+			</when>
+		    <otherwise>
+			      , TRUNCATE(RscList.Usage,2)  AS "Usage"
+		    </otherwise>
+		</choose>
+	     FROM
+		( 
+		    <include refid="listClause"/>                              
+		 ) RscList
+		                     GROUP BY NODE_NO 
+		                  	<choose>
+								<when test="condition.rsc_grp_id == 'RSC_GRP_03' ">
+								      ORDER BY RscList.Temp DESC
+								</when>
+							    <otherwise>
+								     ORDER BY RscList.Usage DESC
+							    </otherwise>
+							</choose>
+		                     LIMIT 10
+    </select>
+ 
+ 
+    <!-- * Chart 조회 -->
+    <select id="getChartList" databaseId="mysql"
+                              resultType="java.util.HashMap">
+		SELECT 
+			 <if test="condition.typeId == 1 || condition.typeId == 5 || condition.typeId == 6 ">
+		       DATE_FORMAT(PRC_DATE,CONCAT(#{condition.locale},' %H:%i' )) AS PRC_DATE 
+		     </if>
+		     <if test="condition.typeId == 2">
+		       DATE_FORMAT(PRC_DATE,CONCAT(#{condition.locale},' %H' )) AS PRC_DATE 
+		     </if>
+		     <if test="condition.typeId == 3">
+		       DATE_FORMAT(PRC_DATE, #{condition.locale} ) AS PRC_DATE 
+		     </if>
+		     <if test="condition.typeId == 4">
+		       DATE_FORMAT(CONCAT(PRC_DATE,'-01'), #{condition.locale}) AS PRC_DATE 
+		     </if>
+             <choose>
+				<when test="condition.rsc_grp_id == 'RSC_GRP_03' ">
+				      , GROUP_CONCAT(NODE_NAME,'~',TRUNCATE(RscList.Temp,2)) AS "Usage"
+				</when>
+			    <otherwise>
+				     , GROUP_CONCAT(NODE_NAME,'~',TRUNCATE(RscList.Usage,2)) AS "Usage"
+			    </otherwise>
+			 </choose>		
+		    
+        
+        FROM 
+        (
+			<include refid="listClause"/>
+		) RscList
+		GROUP BY PRC_DATE
+    </select>
+ 
+ 
+ 
+   <sql id="listClause">
+	SELECT      PRC_DATE
+   			<if test="condition.system_id != 'all'">
+				, NODE_NO
+				, (SELECT NODE_NAME FROM TAT_NODE WHERE NODE_NO = ZX.NODE_NO ) AS NODE_NAME
+			    , (SELECT PKG_NAME FROM TAT_NODE WHERE NODE_NO = ZX.NODE_NO) AS PKG_NAME
+			</if>
+			<if test="condition.system_id == 'all'">
+				, 'ALL' AS NODE_NO
+				, 'ALL' AS NODE_NAME
+			    , 'ALL' AS PKG_NAME
+			</if>        
+	       	<!-- rsc_grp_id -->
+			<if test="condition.rsc_grp_id != null and condition.rsc_grp_id != '' and condition.rsc_grp_id != 'all'">
+			    , (SELECT RSC_GRP_NAME FROM TAT_RSC_GRP_DEF WHERE RSC_GRP_ID = #{condition.rsc_grp_id} ) AS RSC_GRP_NAME
+			</if>
+	        <if test="condition.rsc_grp_id == 'all'  or  condition.rsc_grp_id == '' or condition.rsc_grp_id == null">
+	            , 'ALL'  AS RSC_GRP_NAME
+	        </if>
+	       	<!-- rsc_id  -->
+			<if test="condition.rsc_id != null and condition.rsc_id != '' and condition.rsc_id != 'all' ">
+				, (SELECT  RSC_NAME FROM  TAT_RSC_DEF WHERE RSC_ID =  #{condition.rsc_id} ) AS  RSC_NAME
+			</if>
+	       	<if test="condition.rsc_id == '' or condition.rsc_id == 'all'">
+			  , 'ALL' AS  RSC_NAME                       
+			</if>
+            <foreach   collection="condition.rscIdList" item ="IdCaseListB" index="indexB"   open="" separator=" " close="" >
+	    	  ,ZX.${IdCaseListB.CODE_NAME} AS #{IdCaseListB.CODE_NAME}
+		    </foreach>
+    	FROM
+    	( SELECT    GG.PRC_DATE
+    	           ,GG.NODE_NO
+			          	<foreach   collection="condition.rscIdList" item ="IdCaseListE" index="indexE"   open="" separator=" " close="" >
+	    			     ,GG.${IdCaseListE.CODE_NAME} AS #{IdCaseListE.CODE_NAME}
+					    </foreach>
+		   FROM ( SELECT  AA.PRC_DATE
+			             ,AA.NODE_NO
+			             ,AA.RSC_NAME
+			             ,AA.RSC_GRP_NAME
+			            <foreach   collection="condition.rscIdList" item ="IdCaseListC" index="indexC"   open="" separator=" " close="" >
+	    			     ,AVG(AA.${IdCaseListC.CODE_NAME}) AS #{IdCaseListC.CODE_NAME}
+					    </foreach>
+                   FROM (    SELECT  (<include refid="com.ntels.avocado.dao.common.CommonCodeMapper.typeIdCondition"/>)  AS	PRC_DATE
+						 	,STAT_BASE.NODE_NO
+						 	,STAT_BASE.RSC_NAME
+						 	,STAT_BASE.RSC_GRP_NAME
+						 	<foreach   collection="condition.rscIdList" item ="IdCaseListD" index="indexD"   open="" separator=" " close="" >
+						     ,STAT_BASE.${IdCaseListD.CODE_NAME}
+						    </foreach>
+						 	FROM(		SELECT  C.PRC_DATE
+										      , C.NODE_NO
+										      , A.RSC_GRP_ID
+										      , A.RSC_GRP_NAME
+										      , B.RSC_ID
+										      , B.RSC_NAME
+										      , D.GROUP_CD
+										      , C.COLUMN_ORDER_CCD
+										       <foreach   collection="condition.rscIdCase" item ="IdCaseAlias" index="indexA"   open="" separator=" " close="" >
+								              , SUM(CASE C.COLUMN_ORDER_CCD 
+								                    WHEN #{IdCaseAlias.DETAIL_CD} THEN C.STAT_DATA ELSE 0 END)/ (SELECT COUNT(*) FROM TAT_COMMON_CODE WHERE GROUP_CD = D.GROUP_CD) AS #{IdCaseAlias.CODE_NAME}
+								               </foreach>
+										FROM TAT_RSC_GRP_DEF A 
+										    ,TAT_RSC_DEF B
+										    ,TAT_STS_RSC C
+										    ,TAT_COMMON_CODE D
+										WHERE 1=1
+										AND A.RSC_GRP_ID = B.RSC_GRP_ID 
+										AND B.RSC_ID = C.RSC_ID 
+										AND A.RSC_GRP_CCD = D.GROUP_CD 
+										<!-- systemId -->
+										<if test="condition.system_id != 'all'">
+										AND C.NODE_NO IN
+											<foreach   collection="condition.systemArray" item ="systemArray" index="index"   open="(" separator="," close=")" >
+												 #{systemArray, jdbcType=INTEGER}
+											</foreach>
+									    </if>
+										<include refid="whereClause"/>
+										GROUP BY B.RSC_ID , C.PRC_DATE , C.NODE_NO
+							        ) STAT_BASE
+				           ) AA   GROUP BY NODE_NO, RSC_NAME, PRC_DATE, RSC_GRP_NAME 
+				            ) GG
+			    UNION
+			    SELECT   PRC_DATE 
+                       <if test="condition.system_id == 'all'">
+			       		,'ALL' AS NODE_NO
+			       		</if>
+				       <if test="condition.system_id != 'all'">
+				        ,NODE_NO
+				       </if>
+				       <foreach   collection="condition.rscIdCase" item ="IdCaseAlias" index="indexA"   open="" separator=" " close="" >
+			            , 0 AS #{IdCaseAlias.CODE_NAME}
+			           </foreach>
+			 	FROM (<include refid="com.ntels.avocado.dao.common.CommonCodeMapper.datetimeFromClause"/>) A
+			 	      <if test="condition.system_id != 'all'">
+				        ,( SELECT NODE_NO FROM  
+							<foreach   collection="condition.systemArray" item ="systemArray" index="indexNO"   open="(" separator="UNION" close=") NODE" >
+							  SELECT #{systemArray, jdbcType=INTEGER}  AS NODE_NO
+							</foreach>
+							)B
+				      </if>
+			 	
+			 	) ZX
+		GROUP BY PRC_DATE 
+		       <if test="condition.system_id != 'all'">
+		       	,NODE_NO
+ 			   </if>
+		
+ 	</sql>
+ 	
+ 	
+ 	
+ 	
+ 	<sql id="whereClause">
+
+			<!-- rsc_grp_id -->
+			<if test="condition.rsc_grp_id != null and condition.rsc_grp_id != '' and condition.rsc_grp_id != 'all'">
+			AND B.RSC_GRP_ID = #{condition.rsc_grp_id}
+			</if>
+			<!-- rsc_id  -->
+			<if test="condition.rsc_id != null and condition.rsc_id != '' and condition.rsc_id != 'all' ">
+		    AND B.RSC_ID = #{condition.rsc_id}
+			</if>
+			<choose>
+				<when test="condition.typeId != null and condition.typeId != '' and condition.typeId != 'all'">
+					<if test="condition.typeId == 1 || condition.typeId == 5 || condition.typeId == 6 "> <!-- 5, 10, 30 cycle -->
+						AND DATE_FORMAT(C.PRC_DATE,'%Y%m%d%H%i') <![CDATA[>=]]> CONCAT(#{condition.startDate}, #{condition.startTime})
+			            AND DATE_FORMAT(C.PRC_DATE,'%Y%m%d%H%i') <![CDATA[<]]> CONCAT(#{condition.endDate}, #{condition.endTime})
+			        </if>
+			        <if test="condition.typeId == 2"> <!-- 시간별 -->
+			        	AND DATE_FORMAT(C.PRC_DATE,'%Y%m%d%H') <![CDATA[>=]]> SUBSTR(CONCAT(#{condition.startDate},#{condition.startTime}), 1, 10)
+			            AND DATE_FORMAT(C.PRC_DATE,'%Y%m%d%H') <![CDATA[<]]>  SUBSTR(CONCAT(#{condition.endDate},#{condition.endTime}), 1, 10)
+			        </if>
+			        <if test="condition.typeId == 3"><!--  일별 -->
+			        	AND DATE_FORMAT(C.PRC_DATE,'%Y%m%d') <![CDATA[>=]]> #{condition.startDate}
+			            AND DATE_FORMAT(C.PRC_DATE,'%Y%m%d') <![CDATA[<=]]> #{condition.endDate}
+			        </if>
+			        <if test="condition.typeId == 4"> <!-- 월별 -->
+			        	AND DATE_FORMAT(C.PRC_DATE,'%Y%m') <![CDATA[>=]]> SUBSTR(#{condition.startDate}, 1, 6)
+			            AND DATE_FORMAT(C.PRC_DATE,'%Y%m') <![CDATA[<=]]> SUBSTR(#{condition.endDate}, 1, 6)
+			        </if>
+			    </when>
+			    <otherwise><!-- 전체 -->
+						AND DATE_FORMAT(C.PRC_DATE,'%Y%m%d%H%i') <![CDATA[>=]]> CONCAT(#{condition.startDate}, #{condition.startTime})
+			            AND DATE_FORMAT(C.PRC_DATE,'%Y%m%d%H%i') <![CDATA[<]]> CONCAT(#{condition.endDate}, #{condition.endTime})
+			    </otherwise>
+			</choose>
+    </sql>
+ 	
+ 	
+ 	
+ 	<!-- * 엑셀 조회 -->
+    <select id="listExcel"    resultType="java.util.LinkedHashMap">
+	 SELECT  <if test="condition.typeId == 1 || condition.typeId == 5 || condition.typeId == 6 ">
+		       DATE_FORMAT(PRC_DATE,CONCAT(#{condition.locale},' %H:%i' )) AS Date 
+		     </if>
+		     <if test="condition.typeId == 2">
+		       DATE_FORMAT(PRC_DATE,CONCAT(#{condition.locale},' %H' )) AS Date 
+		     </if>
+		     <if test="condition.typeId == 3">
+		       DATE_FORMAT(PRC_DATE, #{condition.locale} ) AS Date 
+		     </if>
+		     <if test="condition.typeId == 4">
+		       DATE_FORMAT(CONCAT(PRC_DATE,'-01'), #{condition.locale}) AS Date 
+		     </if>
+	   	      ,PKG_NAME      AS 'Package'
+	   	      ,NODE_NAME     AS 'System' 
+	          ,RSC_GRP_NAME  AS 'Resource Name' 
+		      ,RSC_NAME      AS 'Resource ID'
+		   <choose>
+				<when test="condition.rsc_grp_id == 'RSC_GRP_03' ">
+					<foreach   collection="condition.rscIdList" item ="IdCaseListA" index="indexR"   open="" separator=" " close="" >
+				      ,CONCAT(TRUNCATE(RscList.${IdCaseListA.CODE_NAME},1) , 'ºC')  AS #{IdCaseListA.CODE_NAME}
+				    </foreach>
+				</when>
+			    <otherwise>
+				    <foreach   collection="condition.rscIdList" item ="IdCaseListA" index="indexR"   open="" separator=" " close="" >
+				      ,CONCAT(TRUNCATE(RscList.${IdCaseListA.CODE_NAME},2),'%')  AS #{IdCaseListA.CODE_NAME}
+				    </foreach>
+			    </otherwise>
+			</choose>   
+	    FROM
+        (
+		  	<include refid="listClause"/>
+				<if test="condition.orderBy != '' and condition.orderBy != null">
+					ORDER BY ${condition.orderBy}
+				</if>
+				<if test="condition.orderBy == '' or condition.orderBy == null">
+					ORDER BY PRC_DATE
+				</if>
+        ) RscList
+    </select>
+ 	
+ 	
+ 
+ </mapper>

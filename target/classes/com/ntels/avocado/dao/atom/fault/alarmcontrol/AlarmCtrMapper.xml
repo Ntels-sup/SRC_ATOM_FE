@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ntels.avocado.dao.atom.fault.alarmcontrol.AlarmCtrMapper">
+	
+	<select id="listAlarmCtr" resultType="com.ntels.avocado.domain.atom.fault.alarmcontrol.AlarmCtrDomain">
+		SELECT CONTROL_ID
+		     , CONTROL_TYPE
+		     , NAME
+		     , USE_YN
+		  FROM TAT_ALM_CONTROL_DEF
+		 WHERE 1=1
+	</select>
+	
+	<select id="listAlarmCtrLevel" resultType="com.ntels.avocado.domain.atom.fault.alarmcontrol.AlarmCtrDomain">
+		SELECT LEVEL.CONTROL_ID AS CONTROL_ID
+		     , LEVEL.SEVERITY_CCD 
+		     , DEF.USE_YN AS USE_YN
+		     , DEF.CONTROL_TYPE AS CONTROL_TYPE
+		  FROM TAT_ALM_CONTROL_DEF DEF
+		     , TAT_ALM_CONTROL_LEVEL LEVEL
+		 WHERE 1=1
+		   AND DEF.CONTROL_ID = LEVEL.CONTROL_ID
+	</select>
+	
+	<select id="listAlarmCtrCode" resultType="com.ntels.avocado.domain.atom.fault.alarmcontrol.AlarmCtrDomain">
+		SELECT CODE.CONTROL_ID AS CONTROL_ID
+		     , CODE.PKG_NAME AS PKG_NAME
+		     , CODE.CODE AS CODE
+		     , CODE.SEVERITY_CCD
+		     , DEF.USE_YN AS USE_YN
+		     , DEF.CONTROL_TYPE AS CONTROL_TYPE
+		  FROM TAT_ALM_CONTROL_DEF DEF
+		     , TAT_ALM_CONTROL_CODE CODE
+		 WHERE 1=1
+		   AND DEF.CONTROL_ID = CODE.CONTROL_ID
+	</select>
+	
+	<select id="listAlarmCodeDef" resultType="java.util.HashMap">
+		SELECT CODE
+		     , PKG_NAME
+		     , SEVERITY_CCD
+		     , PROBABLE_CAUSE
+		     , DESCRIPTION
+		     , ALIAS_CODE
+		  FROM TAT_ALM_CODE_DEF
+		 WHERE 1=1
+		 ORDER BY PKG_NAME, CODE
+	</select>
+
+	<select id="controlDefChk" resultType="int">
+		SELECT COUNT(*)
+		  FROM TAT_ALM_CONTROL_DEF
+		 WHERE 1=1
+		   AND CONTROL_ID = #{control_id}
+	</select>
+	
+   	<update id="modifyControlDef" parameterType="String">
+		UPDATE TAT_ALM_CONTROL_DEF 
+		   SET CONTROL_TYPE = #{control_type}
+		     , USE_YN = #{use_yn}
+		 WHERE 1=1
+		   AND CONTROL_ID = #{control_id} 
+	</update>
+		
+   	<insert id="addControlDef" parameterType="String">
+		INSERT INTO TAT_ALM_CONTROL_DEF (
+			  CONTROL_ID
+			, NAME
+			, CONTROL_TYPE
+			, USE_YN
+		 ) VALUES (
+		 	  #{control_id}
+		 	<choose>
+		 		<when test="control_id == 1">
+		 		, 'POPUP'
+		 		</when>
+		 		<when test="control_id == 2">
+		 		, 'VOICE'
+		 		</when>
+		 	</choose>
+		 	, #{control_type}
+		 	, #{use_yn}
+		 )  
+		  
+	</insert>
+	
+   	<insert id="addAlarmCtrLevel" parameterType="com.ntels.avocado.domain.atom.fault.alarmcontrol.AlarmCtrDomain">
+		INSERT INTO TAT_ALM_CONTROL_LEVEL (
+			  CONTROL_ID
+			, SEVERITY_CCD
+		) VALUES (
+			  #{condition.control_id} 
+			, #{condition.severity_ccd}
+		)
+	</insert>
+	
+	<insert id="addAlarmCtrCode" parameterType="com.ntels.avocado.domain.atom.fault.alarmcontrol.AlarmCtrDomain">
+		INSERT INTO TAT_ALM_CONTROL_CODE (
+			  CONTROL_ID
+			, SEVERITY_CCD
+			, CODE
+			, PKG_NAME
+		) VALUES (
+			  #{condition.control_id}
+			, #{condition.codeSvr}
+			, #{condition.code}
+			, #{condition.pkg_name}
+		)
+	</insert>
+	
+    <delete id="removeAlarmCtrLevel">
+    	DELETE FROM TAT_ALM_CONTROL_LEVEL
+    	 WHERE 1=1
+    	   AND CONTROL_ID = #{control_id}
+    </delete>
+    
+    <delete id="removeAlarmCtrCode">
+    	DELETE FROM TAT_ALM_CONTROL_CODE
+    	 WHERE 1=1
+    	   AND CONTROL_ID = #{control_id}
+    </delete>
+    
+</mapper>

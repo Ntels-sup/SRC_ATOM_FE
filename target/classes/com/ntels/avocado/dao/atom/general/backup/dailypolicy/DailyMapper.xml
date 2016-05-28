@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+ <!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ntels.avocado.dao.atom.general.backup.dailypolicy.DailyMapper">
+	
+	<!-- 
+	 * Backup 정보
+	  -->
+	<select id="backupInfomation" resultType="hashmap" >
+		SELECT /* DailyMapper.backupInfomation */
+		       SUM(IF(GROUP_CODE = '110000', STORE_DATE, NULL)) AS BACKUP_INPUT_DATA
+		     , SUM(IF(GROUP_CODE = '110001', STORE_DATE, NULL)) AS BACKUP_OUTPUT_DATA
+		     , SUM(IF(GROUP_CODE = '110002', STORE_DATE, NULL)) AS BACKUP_HIST_DATA
+		     , SUM(IF(GROUP_CODE = '110003', STORE_DATE, NULL)) AS BACKUP_STAT_DATA
+		     , SUM(IF(GROUP_CODE = '110004', STORE_DATE, NULL)) AS BACKUP_LOG_DATA
+		     , SUM(IF(GROUP_CODE = '110005', STORE_DATE, NULL)) AS BACKUP_PM_DATA
+		FROM TAT_MNT_POLICY 
+		WHERE POLICY_CATEGORY = 'DAY' 
+		AND PRC_TYPE = 'B' 
+		AND NODE_TYPE = #{node_id} 
+		GROUP BY DATE_FORMAT(PRC_DATE,'%Y%m%d'), USE_YN 
+    </select>
+
+    <!-- 
+	 * Delete 정보
+	  -->
+    <select id="deleteInfomation" resultType="hashmap">
+		SELECT /* DailyMapper.deleteInfomation */
+		       SUM(IF (GROUP_CODE = '110000', STORE_DATE, NULL)) AS DELETE_INPUT_DATA
+		     , SUM(IF (GROUP_CODE = '110001', STORE_DATE, NULL)) AS DELETE_OUTPUT_DATA
+		     , SUM(IF (GROUP_CODE = '110002', STORE_DATE, NULL)) AS DELETE_HIST_DATA
+		     , SUM(IF (GROUP_CODE = '110003', STORE_DATE, NULL)) AS DELETE_STAT_DATA
+		     , SUM(IF (GROUP_CODE = '110004', STORE_DATE, NULL)) AS DELETE_LOG_DATA
+		     , SUM(IF (GROUP_CODE = '110005', STORE_DATE, NULL)) AS DELETE_PM_DATA
+		     , SUM(IF (GROUP_CODE = '110006', STORE_DATE, NULL)) AS COMP_INPUT_DATA
+		     , SUM(IF (GROUP_CODE = '110007', STORE_DATE, NULL)) AS COMP_OUTPUT_DATA
+		     , SUM(IF (GROUP_CODE = '110008', STORE_DATE, NULL)) AS COMP_HIST_DATA
+		     , SUM(IF (GROUP_CODE = '110009', STORE_DATE, NULL)) AS COMP_STAT_DATA
+		     , SUM(IF (GROUP_CODE = '110010', STORE_DATE, NULL)) AS COMP_LOG_DATA
+		     , SUM(IF (GROUP_CODE = '110011', STORE_DATE, NULL)) AS COMP_PM_DATA
+		     , SUM(IF (GROUP_CODE = '110012', STORE_DATE, NULL)) AS COMP_PACKAGE_DATA
+		FROM TAT_MNT_POLICY 
+        WHERE POLICY_CATEGORY = 'DAY' 
+        AND PRC_TYPE = 'D' 
+        AND NODE_TYPE = #{node_id} 
+        GROUP BY DATE_FORMAT(PRC_DATE,'%Y%m%d'), USE_YN
+    </select>
+    
+    <!-- 
+	 * update Backup info
+	  -->
+    <update id="updateBackup">
+		UPDATE /* DailyMapper.updateBackup */
+		      TAT_MNT_POLICY
+		SET   REG_DATE = NOW()
+			, REG_ID = #{user_id}
+			<if test="store_data != null and store_data != ''">
+			, STORE_DATE = #{store_data}
+			</if>
+		WHERE 
+		PKG_NAME = ( SELECT PKG_NAME FROM TAT_NODE_TYPE WHERE NODE_TYPE = #{node_id})
+		AND POLICY_CATEGORY = 'DAY' 
+		AND PRC_TYPE = 'B'
+		AND NODE_TYPE = #{node_id}
+		AND GROUP_CODE = #{group_code}
+     </update>
+
+     <!-- 
+	  * update Delete info
+	  -->
+     <update id="updateDelete">
+		UPDATE /* DailyMapper.updateDelete */
+		       TAT_MNT_POLICY 
+		SET   REG_DATE = NOW()
+			, REG_ID = #{user_id}
+			<if test="store_data != null and store_data != ''">
+			, STORE_DATE = #{store_data}
+			</if>
+		WHERE 
+		PKG_NAME = ( SELECT PKG_NAME FROM TAT_NODE_TYPE WHERE NODE_TYPE = #{node_id})
+		AND POLICY_CATEGORY = 'DAY'
+		AND PRC_TYPE = 'D'
+		AND NODE_TYPE = #{node_id}
+		AND GROUP_CODE = #{group_code}
+     </update>
+
+</mapper>
